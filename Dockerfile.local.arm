@@ -1,0 +1,44 @@
+# docker buildx build  --progress=plain --platform linux/arm64 -f Dockerfile.local.arm  -t 192.168.252.252:5566/library/kite:0.7.3-arm --load .
+
+FROM 192.168.252.252:5566/library/node:20-arm AS frontend-builder
+
+WORKDIR /app/ui
+
+RUN npm config set registry https://registry.npmmirror.com
+
+COPY ui/package.json ui/pnpm-lock.yaml ./
+
+RUN npm install -g pnpm 
+
+RUN pnpm config set registry https://registry.npmmirror.com
+
+RUN pnpm install --frozen-lockfile
+
+COPY ui/ ./
+
+RUN pnpm run build
+
+FROM 192.168.252.252:5566/library/golang:1.25-arm AS backend-builder
+
+WORKDIR /app
+
+COPY go.mod ./
+COPY go.sum ./
+
+ENV GOPROXY=https://mirrors.aliyun.com/goproxy/,direct
+RUN go mod download
+
+COPY . .
+
+COPY --from=frontend-builder /app/static ./static
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o kite .
+
+FROM 192.168.252.252:5566/library/busybox:0121-arm
+
+WORKDIR /app
+
+COPY --from=backend-builder /app/kite .
+
+EXPOSE 8080
+
+CMD ["./kite"]

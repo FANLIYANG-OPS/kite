@@ -1,4 +1,4 @@
-FROM node:20-alpine AS frontend-builder
+FROM fdc541c5ff5ec1812f6f5c02a1b787e1.d.1ms.run/library/node:20-alpine AS frontend-builder
 
 WORKDIR /app/ui
 
@@ -10,12 +10,14 @@ RUN npm install -g pnpm && \
 COPY ui/ ./
 RUN pnpm run build
 
-FROM golang:1.25-alpine AS backend-builder
+FROM fdc541c5ff5ec1812f6f5c02a1b787e1.d.1ms.run/library/golang:1.25-alpine AS backend-builder
 
 WORKDIR /app
 
 COPY go.mod ./
 COPY go.sum ./
+
+ENV GOPROXY=https://goproxy.cn,direct
 
 RUN go mod download
 
@@ -24,7 +26,7 @@ COPY . .
 COPY --from=frontend-builder /app/static ./static
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o kite .
 
-FROM gcr.io/distroless/static
+FROM fdc541c5ff5ec1812f6f5c02a1b787e1.d.1ms.run/library/busybox:latest
 
 WORKDIR /app
 

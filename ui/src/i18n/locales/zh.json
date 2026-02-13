@@ -90,6 +90,7 @@
     "redis": "Redis",
     "zookeeper": "Zookeeper",
     "nifi": "NiFi",
+    "nacos": "Nacos",
     "metrics": "Metrics"
   },
   "sidebar": {
@@ -185,6 +186,27 @@
     "deleteConfirmTitle": "确认删除",
     "deleteConfirmDesc": "将删除选中的 {{count}} 个 NiFi 实例及其关联的 Service、ConfigMap 资源"
   },
+  "nacos": {
+    "create": "创建 Nacos",
+    "createTitle": "创建 Nacos",
+    "createDescription": "创建 Nacos 实例，包括 Service 和 StatefulSet",
+    "createSuccess": "Nacos 创建成功",
+    "pageDescription": "在集群中创建和管理 Nacos 实例",
+    "instanceName": "实例名称",
+    "nameInvalid": "名称必须是有效的 Kubernetes 资源名",
+    "namespaceRequired": "命名空间为必填项",
+    "nodePort": "对外服务端口",
+    "nodePortHint": "NodePort 范围 30000-32767，默认 30884",
+    "portRangeError": "端口必须在 30000-32767 之间",
+    "domain": "域名",
+    "copyFailed": "复制失败",
+    "viewDetail": "查看详情",
+    "noInstances": "暂无 Nacos 实例，点击上方按钮创建",
+    "totalInstances": "共 {{count}} 个实例",
+    "deleteSuccess": "已删除 {{count}} 个 Nacos 实例",
+    "deleteConfirmTitle": "确认删除",
+    "deleteConfirmDesc": "将删除选中的 {{count}} 个 Nacos 实例及其关联的 Service 资源"
+  },
   "metrics": {
     "install": "安装",
     "installTitle": "安装 Metrics 监控栈",
@@ -199,7 +221,10 @@
     "copyFailed": "复制失败",
     "component": "组件",
     "kind": "类型",
-    "viewDetail": "查看详情"
+    "viewDetail": "查看详情",
+    "deleteSuccess": "已删除 {{count}} 个 Metrics 组件",
+    "deleteConfirmTitle": "确认删除",
+    "deleteConfirmDesc": "将删除选中的 {{count}} 个 Metrics 组件"
   },
   "mysql": {
     "instanceName": "实例名称",

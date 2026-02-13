@@ -7,6 +7,7 @@ import { getSubPath } from './lib/subpath'
 import { CRListPage } from './pages/cr-list-page'
 import { MetricsPage } from './pages/metrics-page'
 import { MysqlPage } from './pages/mysql-page'
+import { NacosPage } from './pages/nacos-page'
 import { NifiPage } from './pages/nifi-page'
 import { RedisPage } from './pages/redis-page'
 import { ZookeeperPage } from './pages/zookeeper-page'
@@ -74,6 +75,10 @@ export const router = createBrowserRouter(
         {
           path: 'applications/nifi',
           element: <NifiPage />,
+        },
+        {
+          path: 'applications/nacos',
+          element: <NacosPage />,
         },
         {
           path: 'crds/:crd',

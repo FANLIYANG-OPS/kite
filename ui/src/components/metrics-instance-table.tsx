@@ -1,20 +1,32 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   IconChartBar,
   IconCircleCheckFilled,
   IconCopy,
   IconLoader,
+  IconTrash,
 } from '@tabler/icons-react'
 import { Deployment } from 'kubernetes-types/apps/v1'
 import { DaemonSet } from 'kubernetes-types/apps/v1'
 import { Service } from 'kubernetes-types/core/v1'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
-import { useResources } from '@/lib/api'
+import { deleteResource, useResources } from '@/lib/api'
+import { translateError } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Table,
   TableBody,
@@ -73,6 +85,10 @@ interface ComponentRow {
 
 export function MetricsInstanceTable() {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const [selected, setSelected] = useState<Record<string, boolean>>({})
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const { data: deployments, isLoading: deploymentsLoading } = useResources(
     'deployments',
@@ -140,6 +156,62 @@ export function MetricsInstanceTable() {
 
   const isLoading = deploymentsLoading || daemonsetsLoading
 
+  const selectedCount = useMemo(
+    () => Object.values(selected).filter(Boolean).length,
+    [selected]
+  )
+
+  const toggleSelect = (key: string) => {
+    setSelected((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedCount === components.length) {
+      setSelected({})
+    } else {
+      const next: Record<string, boolean> = {}
+      components.forEach((row) => {
+        next[`${row.namespace}/${row.name}`] = true
+      })
+      setSelected(next)
+    }
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selectedCount === 0) return
+    setIsDeleting(true)
+    try {
+      let deleted = 0
+      for (const row of components) {
+        const key = `${row.namespace}/${row.name}`
+        if (!selected[key]) continue
+        try {
+          if (row.kind === 'Deployment') {
+            await deleteResource('deployments', row.name, row.namespace)
+          } else {
+            await deleteResource('daemonsets', row.name, row.namespace)
+          }
+          deleted++
+        } catch (e) {
+          toast.error(`${row.name}: ${translateError(e, t)}`)
+        }
+      }
+      if (deleted > 0) {
+        toast.success(
+          t('metrics.deleteSuccess', '已删除 {{count}} 个组件', { count: deleted })
+        )
+        setSelected({})
+        setDeleteDialogOpen(false)
+        queryClient.invalidateQueries({ queryKey: ['deployments'] })
+        queryClient.invalidateQueries({ queryKey: ['daemonsets'] })
+      }
+    } catch (err) {
+      toast.error(translateError(err, t))
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   if (components.length === 0 && !isLoading) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
@@ -153,6 +225,47 @@ export function MetricsInstanceTable() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        {selectedCount > 0 && (
+          <Button
+            variant="destructive"
+            onClick={() => setDeleteDialogOpen(true)}
+          >
+            <IconTrash className="mr-2 h-4 w-4" />
+            {t('common.delete')} ({selectedCount})
+          </Button>
+        )}
+      </div>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('metrics.deleteConfirmTitle', '确认删除')}</DialogTitle>
+            <DialogDescription>
+              {t('metrics.deleteConfirmDesc', '将删除选中的 {{count}} 个 Metrics 组件', {
+                count: selectedCount,
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteSelected}
+              disabled={isDeleting}
+            >
+              {isDeleting ? t('common.deleting') : t('common.delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {prometheusDomain && (
         <div className="rounded-lg border bg-card p-4">
           <div className="flex items-center justify-between gap-4">
@@ -183,6 +296,14 @@ export function MetricsInstanceTable() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={
+                    selectedCount === components.length && components.length > 0
+                  }
+                  onCheckedChange={toggleSelectAll}
+                />
+              </TableHead>
               <TableHead>{t('metrics.component', '组件')}</TableHead>
               <TableHead>{t('common.namespace')}</TableHead>
               <TableHead>{t('metrics.kind', '类型')}</TableHead>
@@ -191,9 +312,17 @@ export function MetricsInstanceTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {components.map((row) => (
-              <TableRow key={`${row.namespace}/${row.name}`}>
-                <TableCell className="font-medium">
+            {components.map((row) => {
+              const key = `${row.namespace}/${row.name}`
+              return (
+                <TableRow key={key}>
+                  <TableCell>
+                    <Checkbox
+                      checked={!!selected[key]}
+                      onCheckedChange={() => toggleSelect(key)}
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium">
                   <Link
                     to={`/${row.kind.toLowerCase()}s/${row.namespace}/${row.name}`}
                     className="text-blue-500 hover:underline"
@@ -220,7 +349,8 @@ export function MetricsInstanceTable() {
                   </Button>
                 </TableCell>
               </TableRow>
-            ))}
+              )
+            })}
           </TableBody>
         </Table>
       </div>

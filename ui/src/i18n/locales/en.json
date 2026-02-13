@@ -98,6 +98,7 @@
     "redis": "Redis",
     "zookeeper": "Zookeeper",
     "nifi": "NiFi",
+    "nacos": "Nacos",
     "metrics": "Metrics"
   },
   "applications": {
@@ -167,6 +168,27 @@
     "deleteConfirmTitle": "Confirm Delete",
     "deleteConfirmDesc": "This will delete {{count}} selected NiFi instance(s) and their associated Services and ConfigMaps"
   },
+  "nacos": {
+    "create": "Create Nacos",
+    "createTitle": "Create Nacos",
+    "createDescription": "Create a Nacos instance with Services and StatefulSet",
+    "createSuccess": "Nacos created successfully",
+    "pageDescription": "Create and manage Nacos instances in the cluster",
+    "instanceName": "Instance Name",
+    "nameInvalid": "Name must be a valid Kubernetes resource name",
+    "namespaceRequired": "Namespace is required",
+    "nodePort": "External Port",
+    "nodePortHint": "NodePort range 30000-32767, default 30884",
+    "portRangeError": "Port must be between 30000-32767",
+    "domain": "Domain",
+    "copyFailed": "Copy failed",
+    "viewDetail": "View Detail",
+    "noInstances": "No Nacos instances. Click the button above to create one.",
+    "totalInstances": "{{count}} instance(s) total",
+    "deleteSuccess": "Deleted {{count}} Nacos instance(s)",
+    "deleteConfirmTitle": "Confirm Delete",
+    "deleteConfirmDesc": "This will delete {{count}} selected Nacos instance(s) and their associated Services"
+  },
   "metrics": {
     "install": "Install",
     "installTitle": "Install Metrics Stack",
@@ -181,7 +203,10 @@
     "copyFailed": "Copy failed",
     "component": "Component",
     "kind": "Kind",
-    "viewDetail": "View Detail"
+    "viewDetail": "View Detail",
+    "deleteSuccess": "Deleted {{count}} Metrics component(s)",
+    "deleteConfirmTitle": "Confirm Delete",
+    "deleteConfirmDesc": "This will delete {{count}} selected Metrics component(s)"
   },
   "mysql": {
     "instanceName": "Instance Name",

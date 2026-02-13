@@ -50,6 +50,7 @@ export function DynamicBreadcrumb() {
       redis: t('nav.redis'),
       zookeeper: t('nav.zookeeper'),
       nifi: t('nav.nifi'),
+      nacos: t('nav.nacos'),
     }
 
     // Helper function to create breadcrumb item

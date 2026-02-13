@@ -89,6 +89,7 @@
     "mysql": "MySQL",
     "redis": "Redis",
     "zookeeper": "Zookeeper",
+    "nifi": "NiFi",
     "metrics": "Metrics"
   },
   "sidebar": {
@@ -162,6 +163,27 @@
     "deleteSuccess": "已删除 {{count}} 个 Zookeeper 实例",
     "deleteConfirmTitle": "确认删除",
     "deleteConfirmDesc": "将删除选中的 {{count}} 个 Zookeeper 实例及其关联的 Service、ConfigMap 资源"
+  },
+  "nifi": {
+    "create": "创建 NiFi",
+    "createTitle": "创建 NiFi",
+    "createDescription": "创建 NiFi 实例，包括 ConfigMap、Service 和 StatefulSet",
+    "createSuccess": "NiFi 创建成功",
+    "pageDescription": "在集群中创建和管理 NiFi 实例",
+    "instanceName": "实例名称",
+    "nameInvalid": "名称必须是有效的 Kubernetes 资源名",
+    "namespaceRequired": "命名空间为必填项",
+    "nodePort": "对外服务端口",
+    "nodePortHint": "NodePort 范围 30000-32767，默认 30885",
+    "portRangeError": "端口必须在 30000-32767 之间",
+    "domain": "域名",
+    "copyFailed": "复制失败",
+    "viewDetail": "查看详情",
+    "noInstances": "暂无 NiFi 实例，点击上方按钮创建",
+    "totalInstances": "共 {{count}} 个实例",
+    "deleteSuccess": "已删除 {{count}} 个 NiFi 实例",
+    "deleteConfirmTitle": "确认删除",
+    "deleteConfirmDesc": "将删除选中的 {{count}} 个 NiFi 实例及其关联的 Service、ConfigMap 资源"
   },
   "metrics": {
     "install": "安装",

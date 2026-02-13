@@ -16,8 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 
-// Template from tmp/redis.yaml (metrics stack); sync with: make sync-metrics-template
-import metricsTemplate from '@/templates/metrics.yaml?raw'
+import { METRICS_TEMPLATE } from './metrics-template'
 import { NamespaceSelector } from './selector/namespace-selector'
 
 const DEFAULT_NAMESPACE = 'middleware'
@@ -34,7 +33,7 @@ function stripRuntimeFields(yaml: string): string {
 }
 
 function generateMetricsYamls(namespace: string): string[] {
-  let template = metricsTemplate
+  let template = METRICS_TEMPLATE
   template = template.replace(/\bmiddleware\b/g, namespace)
   template = stripRuntimeFields(template)
 

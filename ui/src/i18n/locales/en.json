@@ -97,6 +97,7 @@
     "mysql": "MySQL",
     "redis": "Redis",
     "zookeeper": "Zookeeper",
+    "nifi": "NiFi",
     "metrics": "Metrics"
   },
   "applications": {
@@ -144,6 +145,27 @@
     "deleteSuccess": "Deleted {{count}} Zookeeper instance(s)",
     "deleteConfirmTitle": "Confirm Delete",
     "deleteConfirmDesc": "This will delete {{count}} selected Zookeeper instance(s) and their associated Services and ConfigMaps"
+  },
+  "nifi": {
+    "create": "Create NiFi",
+    "createTitle": "Create NiFi",
+    "createDescription": "Create a NiFi instance with ConfigMap, Services and StatefulSet",
+    "createSuccess": "NiFi created successfully",
+    "pageDescription": "Create and manage NiFi instances in the cluster",
+    "instanceName": "Instance Name",
+    "nameInvalid": "Name must be a valid Kubernetes resource name",
+    "namespaceRequired": "Namespace is required",
+    "nodePort": "External Port",
+    "nodePortHint": "NodePort range 30000-32767, default 30885",
+    "portRangeError": "Port must be between 30000-32767",
+    "domain": "Domain",
+    "copyFailed": "Copy failed",
+    "viewDetail": "View Detail",
+    "noInstances": "No NiFi instances. Click the button above to create one.",
+    "totalInstances": "{{count}} instance(s) total",
+    "deleteSuccess": "Deleted {{count}} NiFi instance(s)",
+    "deleteConfirmTitle": "Confirm Delete",
+    "deleteConfirmDesc": "This will delete {{count}} selected NiFi instance(s) and their associated Services and ConfigMaps"
   },
   "metrics": {
     "install": "Install",

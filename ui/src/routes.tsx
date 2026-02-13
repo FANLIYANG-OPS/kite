@@ -7,6 +7,7 @@ import { getSubPath } from './lib/subpath'
 import { CRListPage } from './pages/cr-list-page'
 import { MetricsPage } from './pages/metrics-page'
 import { MysqlPage } from './pages/mysql-page'
+import { NifiPage } from './pages/nifi-page'
 import { RedisPage } from './pages/redis-page'
 import { ZookeeperPage } from './pages/zookeeper-page'
 import { InitializationPage } from './pages/initialization'
@@ -69,6 +70,10 @@ export const router = createBrowserRouter(
         {
           path: 'applications/zookeeper',
           element: <ZookeeperPage />,
+        },
+        {
+          path: 'applications/nifi',
+          element: <NifiPage />,
         },
         {
           path: 'crds/:crd',

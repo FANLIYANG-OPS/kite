@@ -1,4 +1,5 @@
-apiVersion: v1
+// Metrics YAML template - inlined from tmp/metrics.yaml
+export const METRICS_TEMPLATE = `apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
@@ -865,5 +866,4 @@ spec:
   sessionAffinity: None
   type: ClusterIP
 
----
-
+---`;

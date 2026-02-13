@@ -45,3 +45,5 @@ kite
 !charts/kite
 
 tmp
+
+dev.db

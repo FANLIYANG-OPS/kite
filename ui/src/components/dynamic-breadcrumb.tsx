@@ -48,6 +48,8 @@ export function DynamicBreadcrumb() {
       applications: t('sidebar.groups.applications'),
       mysql: t('nav.mysql'),
       redis: t('nav.redis'),
+      zookeeper: t('nav.zookeeper'),
+      nifi: t('nav.nifi'),
     }
 
     // Helper function to create breadcrumb item

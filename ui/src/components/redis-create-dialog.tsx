@@ -17,8 +17,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-// Template from tmp/redis.yaml; sync with: make sync-redis-template
-import redisTemplate from '@/templates/redis.yaml?raw'
+import { REDIS_TEMPLATE } from './redis-template'
 import { NamespaceSelector } from './selector/namespace-selector'
 
 const DEFAULT_NAME = 'redis'
@@ -46,7 +45,7 @@ function generateRedisYamls(
   const sentinelMonitor = `${name}-0.${headlessSvc}`
   const passwordB64 = btoaUtf8(password)
 
-  let template = redisTemplate
+  let template = REDIS_TEMPLATE
 
   // Replace in order (longer strings first)
   template = template.replace(

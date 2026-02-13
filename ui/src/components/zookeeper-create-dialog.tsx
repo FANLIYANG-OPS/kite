@@ -17,7 +17,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-import zookeeperTemplate from '@/templates/zookeeper.yaml?raw'
 import { NamespaceSelector } from './selector/namespace-selector'
 
 const DEFAULT_NAME = 'zookeeper'
@@ -30,17 +29,330 @@ function generateZookeeperYamls(name: string, namespace: string): string[] {
     `${name}-2.${name}-headless.${namespace}.svc.cluster.local:2888:3888::3`,
   ].join(' ')
 
-  let template = zookeeperTemplate
-  template = template.replace(/\b__NAMESPACE__\b/g, namespace)
-  template = template.replace(/\b__NAME__\b/g, name)
-  template = template.replace(/\b__ZOO_SERVERS__\b/g, zooServers)
+  const namespaceYaml = `apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${namespace}
+`
 
-  const docs = template
-    .split(/\n---\s*\n/)
-    .map((d) => d.trim())
-    .filter(Boolean)
+  const configMapYaml = `apiVersion: v1
+data:
+  init-certs.sh: '#!/bin/bash'
+  setup.sh: |-
+    #!/bin/bash
 
-  return docs
+    # Execute entrypoint as usual after obtaining ZOO_SERVER_ID
+    # check ZOO_SERVER_ID in persistent volume via myid
+    # if not present, set based on POD hostname
+    if [[ -f "/bitnami/zookeeper/data/myid" ]]; then
+        export ZOO_SERVER_ID="$(cat /bitnami/zookeeper/data/myid)"
+    else
+        HOSTNAME="$(hostname -s)"
+        if [[ $HOSTNAME =~ (.*)-([0-9]+)$ ]]; then
+            ORD=\${BASH_REMATCH[2]}
+            export ZOO_SERVER_ID="$((ORD + 1 ))"
+        else
+            echo "Failed to get index from hostname $HOSTNAME"
+            exit 1
+        fi
+    fi
+    exec /entrypoint.sh /run.sh
+kind: ConfigMap
+metadata:
+  name: ${name}-scripts
+  namespace: ${namespace}
+  labels:
+    app.kubernetes.io/component: zookeeper
+    app.kubernetes.io/instance: ${namespace}
+    app.kubernetes.io/name: ${name}
+    app.kubernetes.io/version: 3.9.3
+`
+
+  const headlessSvcYaml = `apiVersion: v1
+kind: Service
+metadata:
+  name: ${name}-headless
+  namespace: ${namespace}
+  labels:
+    app.kubernetes.io/component: zookeeper
+    app.kubernetes.io/instance: ${namespace}
+    app.kubernetes.io/name: ${name}
+    app.kubernetes.io/version: 3.9.3
+spec:
+  clusterIP: None
+  clusterIPs:
+  - None
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: tcp-client
+    port: 2181
+    protocol: TCP
+    targetPort: client
+  - name: tcp-follower
+    port: 2888
+    protocol: TCP
+    targetPort: follower
+  - name: tcp-election
+    port: 3888
+    protocol: TCP
+    targetPort: election
+  publishNotReadyAddresses: true
+  selector:
+    app.kubernetes.io/instance: ${namespace}
+    app.kubernetes.io/name: ${name}
+    app.kubernetes.io/version: 3.9.3
+  sessionAffinity: None
+  type: ClusterIP
+`
+
+  const clusterIPSvcYaml = `apiVersion: v1
+kind: Service
+metadata:
+  name: ${name}
+  namespace: ${namespace}
+  labels:
+    app.kubernetes.io/component: zookeeper
+    app.kubernetes.io/version: 3.9.3
+    app.kubernetes.io/instance: ${name}
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/type: external-service
+spec:
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: tcp-client
+    port: 2181
+    protocol: TCP
+    targetPort: client
+  - name: tcp-follower
+    port: 2888
+    protocol: TCP
+    targetPort: follower
+  - name: tcp-election
+    port: 3888
+    protocol: TCP
+    targetPort: election
+  selector:
+    app.kubernetes.io/instance: ${namespace}
+    app.kubernetes.io/name: ${name}
+    app.kubernetes.io/version: 3.9.3
+  sessionAffinity: None
+  type: ClusterIP
+`
+
+  const statefulSetYaml = `apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ${name}
+  namespace: ${namespace}
+  labels:
+    app.kubernetes.io/component: zookeeper
+    app.kubernetes.io/instance: ${namespace}
+    app.kubernetes.io/name: ${name}
+    app.kubernetes.io/version: 3.9.3
+spec:
+  podManagementPolicy: Parallel
+  replicas: 3
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: ${namespace}
+      app.kubernetes.io/name: ${name}
+      app.kubernetes.io/version: 3.9.3
+  serviceName: ${name}-headless
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/instance: ${namespace}
+        app.kubernetes.io/name: ${name}
+        app.kubernetes.io/version: 3.9.3
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/instance: ${namespace}
+                  app.kubernetes.io/name: ${name}
+                  app.kubernetes.io/version: 3.9.3
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+      automountServiceAccountToken: false
+      containers:
+      - command:
+        - /scripts/setup.sh
+        env:
+        - name: BITNAMI_DEBUG
+          value: "false"
+        - name: ZOO_DATA_LOG_DIR
+        - name: ZOO_PORT_NUMBER
+          value: "2181"
+        - name: ZOO_TICK_TIME
+          value: "2000"
+        - name: ZOO_INIT_LIMIT
+          value: "10"
+        - name: ZOO_SYNC_LIMIT
+          value: "5"
+        - name: ZOO_PRE_ALLOC_SIZE
+          value: "65536"
+        - name: ZOO_SNAPCOUNT
+          value: "100000"
+        - name: ZOO_MAX_CLIENT_CNXNS
+          value: "60"
+        - name: ZOO_4LW_COMMANDS_WHITELIST
+          value: srvr, mntr, ruok
+        - name: ZOO_LISTEN_ALLIPS_ENABLED
+          value: "no"
+        - name: ZOO_AUTOPURGE_INTERVAL
+          value: "1"
+        - name: ZOO_AUTOPURGE_RETAIN_COUNT
+          value: "10"
+        - name: ZOO_MAX_SESSION_TIMEOUT
+          value: "40000"
+        - name: ZOO_SERVERS
+          value: ${zooServers}
+        - name: ZOO_ENABLE_AUTH
+          value: "no"
+        - name: ZOO_ENABLE_QUORUM_AUTH
+          value: "no"
+        - name: ZOO_HEAP_SIZE
+          value: "1024"
+        - name: ZOO_LOG_LEVEL
+          value: ERROR
+        - name: ALLOW_ANONYMOUS_LOGIN
+          value: "yes"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: ZOO_ADMIN_SERVER_PORT_NUMBER
+          value: "8080"
+        image: bitnami/zookeeper:3.9.3-debian-12-r8
+        imagePullPolicy: Always
+        livenessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -ec
+            - ZOO_HC_TIMEOUT=3 /opt/bitnami/scripts/zookeeper/healthcheck.sh
+          failureThreshold: 6
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: zookeeper
+        ports:
+        - containerPort: 2181
+          name: client
+          protocol: TCP
+        - containerPort: 2888
+          name: follower
+          protocol: TCP
+        - containerPort: 3888
+          name: election
+          protocol: TCP
+        - containerPort: 8080
+          name: http-admin
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -ec
+            - ZOO_HC_TIMEOUT=2 /opt/bitnami/scripts/zookeeper/healthcheck.sh
+          failureThreshold: 6
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsGroup: 1001
+          runAsNonRoot: true
+          runAsUser: 1001
+          seLinuxOptions: {}
+          seccompProfile:
+            type: RuntimeDefault
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /tmp
+          name: empty-dir
+          subPath: tmp-dir
+        - mountPath: /opt/bitnami/zookeeper/conf
+          name: empty-dir
+          subPath: app-conf-dir
+        - mountPath: /opt/bitnami/zookeeper/logs
+          name: empty-dir
+          subPath: app-logs-dir
+        - mountPath: /scripts/setup.sh
+          name: scripts
+          subPath: setup.sh
+        - mountPath: /bitnami/zookeeper
+          name: data
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 1001
+        fsGroupChangePolicy: Always
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - emptyDir: {}
+        name: empty-dir
+      - configMap:
+          defaultMode: 493
+          name: ${name}-scripts
+        name: scripts
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      creationTimestamp: null
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 8Gi
+      storageClassName: local
+      volumeMode: Filesystem
+    status:
+      phase: Pending
+`
+
+  return [
+    namespaceYaml,
+    configMapYaml,
+    headlessSvcYaml,
+    clusterIPSvcYaml,
+    statefulSetYaml,
+  ]
 }
 
 async function applyYamlIgnoreAlreadyExists(yaml: string): Promise<void> {
@@ -63,15 +375,6 @@ async function applyMultiYaml(yamls: string[]): Promise<void> {
       await applyResource(yaml)
     }
   }
-}
-
-function applyWithNamespace(namespace: string, yamls: string[]): string[] {
-  const nsYaml = `apiVersion: v1
-kind: Namespace
-metadata:
-  name: ${namespace}
-`
-  return [nsYaml, ...yamls]
 }
 
 interface ZookeeperCreateDialogProps {
@@ -115,8 +418,7 @@ export function ZookeeperCreateDialog({
     setIsLoading(true)
     try {
       const yamls = generateZookeeperYamls(instanceName, namespace.trim())
-      const withNs = applyWithNamespace(namespace.trim(), yamls)
-      await applyMultiYaml(withNs)
+      await applyMultiYaml(yamls)
       toast.success(t('zookeeper.createSuccess', 'Zookeeper created successfully'))
       setName(DEFAULT_NAME)
       setNamespace(DEFAULT_NAMESPACE)

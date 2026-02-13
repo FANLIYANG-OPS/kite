@@ -135,6 +135,18 @@ test: ## Run tests
 	@echo "🧪 Running tests..."
 	go test -v ./...
 
+sync-redis-template: ## Sync tmp/redis.yaml to ui template (run after updating tmp/redis.yaml)
+	cp tmp/redis.yaml $(UI_DIR)/src/templates/redis.yaml
+	@echo "✅ Redis template synced"
+
+sync-metrics-template: ## Sync tmp/redis.yaml to ui metrics template (run after updating tmp/redis.yaml)
+	cp tmp/redis.yaml $(UI_DIR)/src/templates/metrics.yaml
+	@echo "✅ Metrics template synced"
+
+sync-zookeeper-template: ## Merge tmp zookeeper files to ui template (run after updating tmp/zookeeper*.yaml)
+	chmod +x scripts/merge-zookeeper-template.sh 2>/dev/null || true
+	./scripts/merge-zookeeper-template.sh
+
 docs-dev: ## Start documentation server in development mode
 	@echo "📚 Starting documentation server..."
 	cd docs && pnpm run docs:dev

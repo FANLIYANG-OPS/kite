@@ -11,6 +11,16 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/** Encode UTF-8 string to base64 (for Kubernetes Secret data) */
+export function btoaUtf8(str: string): string {
+  const bytes = new TextEncoder().encode(str)
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  return btoa(binary)
+}
+
 // Simple debounce function for string input handlers with cancel support
 export function debounce(fn: (value: string) => void, delay: number) {
   let timeout: NodeJS.Timeout | null = null

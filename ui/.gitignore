@@ -25,6 +25,5 @@ package-lock.json
 *.njsproj
 *.sln
 *.sw?
-
 .lh/
 node_modules/

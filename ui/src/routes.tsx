@@ -5,6 +5,10 @@ import { InitCheckRoute } from './components/init-check-route'
 import { ProtectedRoute } from './components/protected-route'
 import { getSubPath } from './lib/subpath'
 import { CRListPage } from './pages/cr-list-page'
+import { MetricsPage } from './pages/metrics-page'
+import { MysqlPage } from './pages/mysql-page'
+import { RedisPage } from './pages/redis-page'
+import { ZookeeperPage } from './pages/zookeeper-page'
 import { InitializationPage } from './pages/initialization'
 import { LoginPage } from './pages/login'
 import { Overview } from './pages/overview'
@@ -49,6 +53,22 @@ export const router = createBrowserRouter(
         {
           path: 'settings',
           element: <SettingsPage />,
+        },
+        {
+          path: 'applications/mysql',
+          element: <MysqlPage />,
+        },
+        {
+          path: 'applications/redis',
+          element: <RedisPage />,
+        },
+        {
+          path: 'applications/metrics',
+          element: <MetricsPage />,
+        },
+        {
+          path: 'applications/zookeeper',
+          element: <ZookeeperPage />,
         },
         {
           path: 'crds/:crd',

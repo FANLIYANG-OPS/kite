@@ -45,6 +45,9 @@ export function DynamicBreadcrumb() {
       crds: t('nav.crds'),
       crs: t('nav.customResources'),
       horizontalpodautoscalers: t('nav.horizontalpodautoscalers'),
+      applications: t('sidebar.groups.applications'),
+      mysql: t('nav.mysql'),
+      redis: t('nav.redis'),
     }
 
     // Helper function to create breadcrumb item
@@ -66,6 +69,10 @@ export function DynamicBreadcrumb() {
         if (index === 0) return '/crds'
         if (index === 1) return `/crds/${pathSegments[1]}`
         if (index === 2) return `/crds/${pathSegments[1]}` // namespace links back to CRD list
+        return undefined
+      } else if (pathSegments[0] === 'applications') {
+        if (index === 0) return undefined // No parent applications list page
+        if (index === 1) return undefined // Current page
         return undefined
       } else {
         // Regular resources: namespace should link back to resource list

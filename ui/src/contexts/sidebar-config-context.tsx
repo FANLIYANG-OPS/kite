@@ -13,6 +13,8 @@ import {
   IconBell,
   IconBox,
   IconBoxMultiple,
+  IconBrandMysql,
+  IconChartBar,
   IconClockHour4,
   IconCode,
   IconDatabase,
@@ -71,6 +73,8 @@ const iconMap = {
   IconBell,
   IconCode,
   IconArrowsHorizontal,
+  IconBrandMysql,
+  IconChartBar,
 }
 
 const getIconName = (iconComponent: React.ComponentType): string => {
@@ -188,6 +192,12 @@ const defaultMenus: DefaultMenus = {
       icon: IconKey,
     },
   ],
+  'sidebar.groups.applications': [
+    { titleKey: 'nav.mysql', url: '/applications/mysql', icon: IconBrandMysql },
+    { titleKey: 'nav.redis', url: '/applications/redis', icon: IconDatabase },
+    { titleKey: 'nav.zookeeper', url: '/applications/zookeeper', icon: IconDatabase },
+    { titleKey: 'nav.metrics', url: '/applications/metrics', icon: IconChartBar },
+  ],
   'sidebar.groups.other': [
     {
       titleKey: 'nav.namespaces',
@@ -200,7 +210,7 @@ const defaultMenus: DefaultMenus = {
   ],
 }
 
-const CURRENT_CONFIG_VERSION = 1
+const CURRENT_CONFIG_VERSION = 2
 
 const defaultConfigs = (): SidebarConfig => {
   const groups: SidebarGroup[] = []

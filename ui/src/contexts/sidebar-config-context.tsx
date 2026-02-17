@@ -198,6 +198,8 @@ const defaultMenus: DefaultMenus = {
     { titleKey: 'nav.zookeeper', url: '/applications/zookeeper', icon: IconDatabase },
     { titleKey: 'nav.nifi', url: '/applications/nifi', icon: IconDatabase },
     { titleKey: 'nav.nacos', url: '/applications/nacos', icon: IconDatabase },
+    { titleKey: 'nav.minio', url: '/applications/minio', icon: IconDatabase },
+    { titleKey: 'nav.kafka', url: '/applications/kafka', icon: IconDatabase },
     { titleKey: 'nav.metrics', url: '/applications/metrics', icon: IconChartBar },
   ],
   'sidebar.groups.other': [

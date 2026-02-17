@@ -51,6 +51,8 @@ export function DynamicBreadcrumb() {
       zookeeper: t('nav.zookeeper'),
       nifi: t('nav.nifi'),
       nacos: t('nav.nacos'),
+      minio: t('nav.minio'),
+      kafka: t('nav.kafka'),
     }
 
     // Helper function to create breadcrumb item

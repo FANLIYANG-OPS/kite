@@ -5,18 +5,20 @@ import { InitCheckRoute } from './components/init-check-route'
 import { ProtectedRoute } from './components/protected-route'
 import { getSubPath } from './lib/subpath'
 import { CRListPage } from './pages/cr-list-page'
+import { KafkaPage } from './pages/kafka-page'
+import { InitializationPage } from './pages/initialization'
+import { LoginPage } from './pages/login'
 import { MetricsPage } from './pages/metrics-page'
+import { MinioPage } from './pages/minio-page'
 import { MysqlPage } from './pages/mysql-page'
 import { NacosPage } from './pages/nacos-page'
 import { NifiPage } from './pages/nifi-page'
-import { RedisPage } from './pages/redis-page'
-import { ZookeeperPage } from './pages/zookeeper-page'
-import { InitializationPage } from './pages/initialization'
-import { LoginPage } from './pages/login'
 import { Overview } from './pages/overview'
+import { RedisPage } from './pages/redis-page'
 import { ResourceDetail } from './pages/resource-detail'
 import { ResourceList } from './pages/resource-list'
 import { SettingsPage } from './pages/settings'
+import { ZookeeperPage } from './pages/zookeeper-page'
 
 const subPath = getSubPath()
 
@@ -79,6 +81,14 @@ export const router = createBrowserRouter(
         {
           path: 'applications/nacos',
           element: <NacosPage />,
+        },
+        {
+          path: 'applications/minio',
+          element: <MinioPage />,
+        },
+        {
+          path: 'applications/kafka',
+          element: <KafkaPage />,
         },
         {
           path: 'crds/:crd',

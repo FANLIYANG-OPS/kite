@@ -200,6 +200,9 @@ const defaultMenus: DefaultMenus = {
     { titleKey: 'nav.nacos', url: '/applications/nacos', icon: IconDatabase },
     { titleKey: 'nav.minio', url: '/applications/minio', icon: IconDatabase },
     { titleKey: 'nav.kafka', url: '/applications/kafka', icon: IconDatabase },
+    { titleKey: 'nav.doris', url: '/applications/doris', icon: IconDatabase },
+    { titleKey: 'nav.dorisOperator', url: '/applications/doris-operator', icon: IconDatabase },
+    { titleKey: 'nav.grafana', url: '/applications/grafana', icon: IconChartBar },
     { titleKey: 'nav.metrics', url: '/applications/metrics', icon: IconChartBar },
   ],
   'sidebar.groups.other': [

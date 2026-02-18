@@ -5,6 +5,8 @@ import { InitCheckRoute } from './components/init-check-route'
 import { ProtectedRoute } from './components/protected-route'
 import { getSubPath } from './lib/subpath'
 import { CRListPage } from './pages/cr-list-page'
+import { DorisPage } from './pages/doris-page'
+import { DorisOperatorPage } from './pages/doris-operator-page'
 import { KafkaPage } from './pages/kafka-page'
 import { InitializationPage } from './pages/initialization'
 import { LoginPage } from './pages/login'
@@ -18,6 +20,7 @@ import { RedisPage } from './pages/redis-page'
 import { ResourceDetail } from './pages/resource-detail'
 import { ResourceList } from './pages/resource-list'
 import { SettingsPage } from './pages/settings'
+import { GrafanaPage } from './pages/grafana-page'
 import { ZookeeperPage } from './pages/zookeeper-page'
 
 const subPath = getSubPath()
@@ -67,6 +70,10 @@ export const router = createBrowserRouter(
           element: <RedisPage />,
         },
         {
+          path: 'applications/grafana',
+          element: <GrafanaPage />,
+        },
+        {
           path: 'applications/metrics',
           element: <MetricsPage />,
         },
@@ -89,6 +96,14 @@ export const router = createBrowserRouter(
         {
           path: 'applications/kafka',
           element: <KafkaPage />,
+        },
+        {
+          path: 'applications/doris',
+          element: <DorisPage />,
+        },
+        {
+          path: 'applications/doris-operator',
+          element: <DorisOperatorPage />,
         },
         {
           path: 'crds/:crd',

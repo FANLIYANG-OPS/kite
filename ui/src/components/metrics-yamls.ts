@@ -1,5 +1,14 @@
-// Metrics YAML template - inlined from tmp/metrics.yaml
-export const METRICS_TEMPLATE = `apiVersion: v1
+// Metrics YAML resources - from tmp/metrics.yaml (tmp/redis.yaml)
+// Each resource is a separate variable, use ${namespace} for template interpolation
+
+export function generateMetricsYamls(namespace: string): string[] {
+  const namespaceYaml = `apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${namespace}
+`
+
+  const serviceAccountYaml = `apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
@@ -8,11 +17,10 @@ metadata:
     app.kubernetes.io/name: prometheus
     app.kubernetes.io/version: v3.7.3
   name: metrics-server
-  namespace: middleware
+  namespace: ${namespace}
+`
 
----
-
-apiVersion: rbac.authorization.k8s.io/v1
+  const clusterRoleBindingYaml = `apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: metrics-server:cluster-admins
@@ -23,11 +31,10 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: metrics-server
-  namespace: middleware
+  namespace: ${namespace}
+`
 
----
-
-apiVersion: v1
+  const kubeStateMetricsServiceYaml = `apiVersion: v1
 kind: Service
 metadata:
   labels:
@@ -35,7 +42,7 @@ metadata:
     app.kubernetes.io/instance: metrics
     app.kubernetes.io/managed-by: Helm
   name: kube-state-metrics
-  namespace: middleware
+  namespace: ${namespace}
 spec:
   ports:
   - name: http-metrics
@@ -46,16 +53,15 @@ spec:
     targetPort: telemetry
   selector:
     k8s-app: kube-state-metrics
+`
 
----
-
-apiVersion: apps/v1
+  const kubeStateMetricsDeploymentYaml = `apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
     k8s-app: kube-state-metrics
   name: kube-state-metrics
-  namespace: middleware
+  namespace: ${namespace}
 spec:
   replicas: 1
   selector:
@@ -78,7 +84,7 @@ spec:
           timeoutSeconds: 5
         name: kube-state-metrics
         args:
-          - "--resources=daemonsets,nodes,statefulsets,pods,deployments" 
+          - "--resources=daemonsets,nodes,statefulsets,pods,deployments"
         ports:
         - containerPort: 8080
           name: http-metrics
@@ -103,10 +109,9 @@ spec:
       nodeSelector:
         kubernetes.io/os: linux
       serviceAccountName: metrics-server
+`
 
----
-
-apiVersion: v1
+  const metricsServerServiceYaml = `apiVersion: v1
 kind: Service
 metadata:
   labels:
@@ -114,7 +119,7 @@ metadata:
     app.kubernetes.io/instance: metrics
     app.kubernetes.io/managed-by: Helm
   name: metrics-server
-  namespace: middleware
+  namespace: ${namespace}
 spec:
   ports:
   - appProtocol: https
@@ -124,16 +129,15 @@ spec:
     targetPort: https
   selector:
     k8s-app: kube-metrics-server
+`
 
----
-
-apiVersion: apps/v1
+  const metricsServerDeploymentYaml = `apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
     k8s-app: kube-metrics-server
   name: kube-metrics-server
-  namespace: middleware
+  namespace: ${namespace}
 spec:
   selector:
     matchLabels:
@@ -196,13 +200,13 @@ spec:
       nodeSelector:
         kubernetes.io/os: linux
       priorityClassName: system-cluster-critical
-      serviceAccount: metrics-server
       serviceAccountName: metrics-server
       volumes:
       - emptyDir: {}
         name: tmp-dir
----
-apiVersion: apiregistration.k8s.io/v1
+`
+
+  const apiServiceYaml = `apiVersion: apiregistration.k8s.io/v1
 kind: APIService
 metadata:
   labels:
@@ -214,19 +218,18 @@ spec:
   insecureSkipTLSVerify: true
   service:
     name: metrics-server
-    namespace: middleware
+    namespace: ${namespace}
   version: v1beta1
   versionPriority: 100
+`
 
----
-
-apiVersion: apps/v1
+  const nodeExporterDaemonSetYaml = `apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   labels:
     k8s-app: kube-node-exporter
   name: kube-node-exporter
-  namespace: middleware
+  namespace: ${namespace}
 spec:
   revisionHistoryLimit: 10
   selector:
@@ -237,19 +240,6 @@ spec:
       labels:
         k8s-app: kube-node-exporter
     spec:
-      # affinity:
-      #   nodeAffinity:
-      #     requiredDuringSchedulingIgnoredDuringExecution:
-      #       nodeSelectorTerms:
-      #       - matchExpressions:
-      #         - key: eks.amazonaws.com/compute-type
-      #           operator: NotIn
-      #           values:
-      #           - fargate
-      #         - key: type
-      #           operator: NotIn
-      #           values:
-      #           - virtual-kubelet
       automountServiceAccountToken: false
       containers:
       - args:
@@ -257,10 +247,10 @@ spec:
         - --path.sysfs=/host/sys
         - --path.rootfs=/host/root
         - --path.udev.data=/host/root/run/udev/data
-        - --web.listen-address=[$(HOST_IP)]:9100
+        - --web.listen-address=[\${HOST_IP}]:9100
         env:
         - name: HOST_IP
-          value: 0.0.0.0
+          value: "0.0.0.0"
         image: prometheus/node-exporter:v1.10.2
         imagePullPolicy: Always
         livenessProbe:
@@ -315,7 +305,6 @@ spec:
         runAsGroup: 65534
         runAsNonRoot: true
         runAsUser: 65534
-      serviceAccount: metrics-server
       serviceAccountName: metrics-server
       terminationGracePeriodSeconds: 30
       tolerations:
@@ -339,10 +328,9 @@ spec:
       maxSurge: 0
       maxUnavailable: 1
     type: RollingUpdate
+`
 
----
-
-apiVersion: v1
+  const nodeExporterServiceYaml = `apiVersion: v1
 kind: Service
 metadata:
   labels:
@@ -350,7 +338,7 @@ metadata:
     app.kubernetes.io/instance: metrics
     app.kubernetes.io/managed-by: Helm
   name: node-exporter
-  namespace: middleware
+  namespace: ${namespace}
 spec:
   internalTrafficPolicy: Cluster
   ipFamilies:
@@ -365,17 +353,15 @@ spec:
     k8s-app: kube-node-exporter
   sessionAffinity: None
   type: ClusterIP
+`
 
----
-
-
-apiVersion: apps/v1
+  const prometheusDeploymentYaml = `apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
     k8s-app: kube-prometheus-server
   name: kube-prometheus-server
-  namespace: middleware
+  namespace: ${namespace}
 spec:
   replicas: 1
   selector:
@@ -476,7 +462,6 @@ spec:
         runAsGroup: 65534
         runAsNonRoot: true
         runAsUser: 65534
-      serviceAccount: metrics-server
       serviceAccountName: metrics-server
       terminationGracePeriodSeconds: 300
       volumes:
@@ -487,10 +472,9 @@ spec:
       - name: storage-volume
         persistentVolumeClaim:
           claimName: prometheus-server
+`
 
----
-
-apiVersion: v1
+  const prometheusConfigMapYaml = `apiVersion: v1
 data:
   alerting_rules.yml: |
     {}
@@ -511,7 +495,7 @@ data:
     - job_name: kube-state-metrics
       static_configs:
       - targets:
-        - kube-state-metrics.middleware.svc.cluster.local:8080
+        - kube-state-metrics.${namespace}.svc.cluster.local:8080
     - job_name: prometheus
       static_configs:
       - targets:
@@ -588,7 +572,7 @@ data:
         - __meta_kubernetes_service_annotation_prometheus_io_path
         target_label: __metrics_path__
       - action: replace
-        regex: (.+?)(?::\d+)?;(\d+)
+        regex: (.+?)(?::\\d+)?;(\\d+)
         replacement: $1:$2
         source_labels:
         - __address__
@@ -631,7 +615,7 @@ data:
         - __meta_kubernetes_service_annotation_prometheus_io_path
         target_label: __metrics_path__
       - action: replace
-        regex: (.+?)(?::\d+)?;(\d+)
+        regex: (.+?)(?::\\d+)?;(\\d+)
         replacement: $1:$2
         source_labels:
         - __address__
@@ -718,14 +702,14 @@ data:
         - __meta_kubernetes_pod_annotation_prometheus_io_path
         target_label: __metrics_path__
       - action: replace
-        regex: (\d+);(([A-Fa-f0-9]{1,4}::?){1,7}[A-Fa-f0-9]{1,4})
+        regex: (\\d+);(([A-Fa-f0-9]{1,4}::?){1,7}[A-Fa-f0-9]{1,4})
         replacement: '[$2]:$1'
         source_labels:
         - __meta_kubernetes_pod_annotation_prometheus_io_port
         - __meta_kubernetes_pod_ip
         target_label: __address__
       - action: replace
-        regex: (\d+);((([0-9]+?)(\.|$)){4})
+        regex: (\\d+);((([0-9]+?)(\\.|$)){4})
         replacement: $2:$1
         source_labels:
         - __meta_kubernetes_pod_annotation_prometheus_io_port
@@ -772,14 +756,14 @@ data:
         - __meta_kubernetes_pod_annotation_prometheus_io_path
         target_label: __metrics_path__
       - action: replace
-        regex: (\d+);(([A-Fa-f0-9]{1,4}::?){1,7}[A-Fa-f0-9]{1,4})
+        regex: (\\d+);(([A-Fa-f0-9]{1,4}::?){1,7}[A-Fa-f0-9]{1,4})
         replacement: '[$2]:$1'
         source_labels:
         - __meta_kubernetes_pod_annotation_prometheus_io_port
         - __meta_kubernetes_pod_ip
         target_label: __address__
       - action: replace
-        regex: (\d+);((([0-9]+?)(\.|$)){4})
+        regex: (\\d+);((([0-9]+?)(\\.|$)){4})
         replacement: $2:$1
         source_labels:
         - __meta_kubernetes_pod_annotation_prometheus_io_port
@@ -817,11 +801,10 @@ metadata:
   labels:
     k8s-app: kube-prometheus-server
   name: prometheus-server
-  namespace: middleware
+  namespace: ${namespace}
+`
 
----
-
-apiVersion: v1
+  const prometheusPvcYaml = `apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   labels:
@@ -829,7 +812,7 @@ metadata:
     app.kubernetes.io/instance: prometheus
     app.kubernetes.io/name: prometheus
   name: prometheus-server
-  namespace: middleware
+  namespace: ${namespace}
 spec:
   accessModes:
   - ReadWriteOnce
@@ -838,10 +821,9 @@ spec:
       storage: 8Gi
   storageClassName: local
   volumeMode: Filesystem
+`
 
----
-
-apiVersion: v1
+  const prometheusServiceYaml = `apiVersion: v1
 kind: Service
 metadata:
   labels:
@@ -850,7 +832,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/type: external-service
   name: prometheus-server
-  namespace: middleware
+  namespace: ${namespace}
 spec:
   internalTrafficPolicy: Cluster
   ipFamilies:
@@ -865,5 +847,23 @@ spec:
     k8s-app: kube-prometheus-server
   sessionAffinity: None
   type: ClusterIP
+`
 
----`;
+  return [
+    namespaceYaml,
+    serviceAccountYaml,
+    clusterRoleBindingYaml,
+    kubeStateMetricsServiceYaml,
+    kubeStateMetricsDeploymentYaml,
+    metricsServerServiceYaml,
+    metricsServerDeploymentYaml,
+    apiServiceYaml,
+    nodeExporterDaemonSetYaml,
+    nodeExporterServiceYaml,
+    prometheusConfigMapYaml,
+    prometheusPvcYaml,
+    prometheusDeploymentYaml,
+    prometheusServiceYaml,
+  ]
+}
+

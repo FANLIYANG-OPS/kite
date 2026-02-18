@@ -53,6 +53,9 @@ export function DynamicBreadcrumb() {
       nacos: t('nav.nacos'),
       minio: t('nav.minio'),
       kafka: t('nav.kafka'),
+      doris: t('nav.doris'),
+      'doris-operator': t('nav.dorisOperator'),
+      grafana: t('nav.grafana'),
     }
 
     // Helper function to create breadcrumb item

@@ -16,33 +16,36 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 
-import { generateMetricsYamls } from './metrics-yamls'
+import { generateDorisOperatorYamls } from './doris-operator-yamls'
 import { NamespaceSelector } from './selector/namespace-selector'
 
 const DEFAULT_NAMESPACE = 'middleware'
 
-async function applyYamlIgnoreAlreadyExists(yaml: string): Promise<void> {
+async function ensureNamespace(namespace: string): Promise<void> {
+  const nsYaml = `apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${namespace}
+`
   try {
-    await applyResource(yaml.trim())
+    await applyResource(nsYaml.trim())
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    if (!msg.includes('AlreadyExists') && !msg.includes('already exists')) {
-      throw err
-    }
+    if (!msg.includes('AlreadyExists') && !msg.includes('already exists')) throw err
   }
 }
 
-interface MetricsInstallDialogProps {
+interface DorisOperatorInstallDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
 }
 
-export function MetricsInstallDialog({
+export function DorisOperatorInstallDialog({
   open,
   onOpenChange,
   onSuccess,
-}: MetricsInstallDialogProps) {
+}: DorisOperatorInstallDialogProps) {
   const { t } = useTranslation()
   const { data: namespaces } = useResources('namespaces')
   const [namespace, setNamespace] = useState(DEFAULT_NAMESPACE)
@@ -51,8 +54,7 @@ export function MetricsInstallDialog({
   useEffect(() => {
     if (open && namespaces?.length) {
       const nsNames = namespaces.map((n) => n.metadata?.name).filter(Boolean)
-      const hasDefault = nsNames.includes(DEFAULT_NAMESPACE)
-      if (!hasDefault && nsNames[0]) {
+      if (!nsNames.includes(DEFAULT_NAMESPACE) && nsNames[0]) {
         setNamespace(nsNames[0])
       }
     }
@@ -60,27 +62,22 @@ export function MetricsInstallDialog({
 
   const handleInstall = async () => {
     if (!namespace?.trim()) {
-      toast.error(t('metrics.namespaceRequired', 'Namespace is required'))
+      toast.error(t('doris.operator.namespaceRequired', 'Namespace is required'))
       return
     }
-
     setIsLoading(true)
     try {
-      const yamls = generateMetricsYamls(namespace.trim())
-      for (let i = 0; i < yamls.length; i++) {
-        const yaml = yamls[i].trim()
-        if (yaml.includes('kind: Namespace')) {
-          await applyYamlIgnoreAlreadyExists(yaml)
-        } else {
-          await applyResource(yaml)
-        }
+      await ensureNamespace(namespace.trim())
+      const yamls = generateDorisOperatorYamls(namespace.trim())
+      for (const yaml of yamls) {
+        await applyResource(yaml.trim())
       }
-      toast.success(t('metrics.installSuccess', 'Metrics stack installed successfully'))
+      toast.success(t('doris.operator.installSuccess', 'Doris Operator installed successfully'))
       setNamespace(DEFAULT_NAMESPACE)
       onOpenChange(false)
       onSuccess?.()
     } catch (err) {
-      console.error('Failed to install metrics', err)
+      console.error('Failed to install Doris Operator', err)
       toast.error(translateError(err, t))
     } finally {
       setIsLoading(false)
@@ -96,12 +93,14 @@ export function MetricsInstallDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{t('metrics.installTitle', 'Install Metrics Stack')}</DialogTitle>
+          <DialogTitle>{t('doris.operator.installTitle', 'Install Doris Operator')}</DialogTitle>
           <DialogDescription>
-            {t('metrics.installDescription', 'Install metrics-server, kube-state-metrics, node-exporter and Prometheus (from tmp/redis.yaml template)')}
+            {t(
+              'doris.operator.installDescription',
+              'Install Doris Operator including CRDs, RBAC, ServiceAccount, Webhooks and Deployment'
+            )}
           </DialogDescription>
         </DialogHeader>
-
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="namespace">{t('common.namespace')}</Label>
@@ -109,27 +108,23 @@ export function MetricsInstallDialog({
               <NamespaceSelector
                 selectedNamespace={namespace}
                 handleNamespaceChange={setNamespace}
+                extraOptions={[DEFAULT_NAMESPACE, 'doris-operator']}
               />
             </div>
           </div>
         </div>
-
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            disabled={isLoading}
-          >
+          <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
             {t('common.cancel')}
           </Button>
           <Button onClick={handleInstall} disabled={isLoading}>
             {isLoading ? (
               <>
                 <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t('metrics.installing', 'Installing...')}
+                {t('doris.operator.installing', 'Installing...')}
               </>
             ) : (
-              t('metrics.install', 'Install')
+              t('doris.operator.install', 'Install')
             )}
           </Button>
         </DialogFooter>

@@ -1,0 +1,61 @@
+apiVersion: v1
+data:
+  registry.yaml: |-
+    modules:
+      - name: schema-registry
+        className: com.hortonworks.registries.schemaregistry.webservice.SchemaRegistryModule
+        config:
+          schemaProviders:
+            - providerClass: "com.hortonworks.registries.schemaregistry.avro.AvroSchemaProvider"
+              defaultSerializerClass: "com.hortonworks.registries.schemaregistry.serdes.avro.AvroSnapshotSerializer"
+              defaultDeserializerClass: "com.hortonworks.registries.schemaregistry.serdes.avro.AvroSnapshotDeserializer"
+          customSchemaStateExecutor:
+            className: "com.hortonworks.registries.schemaregistry.state.DefaultCustomSchemaStateExecutor"
+            props:
+          schemaCacheSize: 10000
+          schemaCacheExpiryInterval: 3600
+
+    servletFilters:
+     - className: "com.hortonworks.registries.schemaregistry.webservice.RewriteUriFilter"
+       params:
+         forwardPaths: "/api/v1/confluent,/subjects/*,/schemas/ids/*"
+         redirectPaths: "/ui/,/"
+
+    fileStorageConfiguration:
+      className: "com.hortonworks.registries.common.util.LocalFileSystemStorage"
+      properties:
+        directory: "/tmp/schema-registry/jars"
+
+    storageProviderConfiguration:
+     providerClass: "com.hortonworks.registries.storage.impl.jdbc.JdbcStorageManager"
+     properties:
+       db.type: "mysql"
+       queryTimeoutInSecs: 30
+       db.properties:
+         dataSourceClassName: "com.mysql.jdbc.jdbc2.optional.MysqlDataSource"
+         dataSource.url: "jdbc:mysql://mysql.{{.Namespace}}.svc.cluster.local:3306/dolphinscheduler?useUnicode=true&characterEncoding=UTF-8&useSSL=false"
+         dataSource.user: "dolphinscheduler"
+         dataSource.password: "3mxM6DS_7iEpEvP"
+    swagger:
+      resourcePackage: com.hortonworks.registries.schemaregistry.webservice
+    enableCors: true
+    server:
+      applicationConnectors:
+        - type: http
+          port: 9090
+      adminConnectors:
+        - type: http
+          port: 9091
+    logging:
+      level: INFO
+      loggers:
+        com.hortonworks.registries: INFO
+kind: ConfigMap
+metadata:
+  name: {{.Name}}
+  namespace: {{.Namespace}}
+  labels:
+    app.kubernetes.io/instance: {{.Namespace}}
+    app.kubernetes.io/name: {{.Name}}
+    app.kubernetes.io/version: 0.5.4
+    app.kubernetes.io/component: hortonworks

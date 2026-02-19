@@ -7,7 +7,8 @@ import {
   IconTrash,
 } from '@tabler/icons-react'
 import { createColumnHelper } from '@tanstack/react-table'
-import { StatefulSet } from 'kubernetes-types/apps/v1'
+import { Deployment } from 'kubernetes-types/apps/v1'
+import { Service } from 'kubernetes-types/core/v1'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -44,33 +45,56 @@ import {
 } from '@tanstack/react-table'
 import { Input } from '@/components/ui/input'
 
-const ROCKETMQ_LABEL_SELECTOR = 'app.kubernetes.io/component=rocketmq'
+const HORTONWORKS_LABEL_SELECTOR = 'app.kubernetes.io/component=hortonworks'
 
-export function RocketmqInstanceTable() {
+export function HortonworksInstanceTable() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
 
   const {
-    data: statefulsets,
+    data: deployments,
     isLoading,
     refetch,
-  } = useResources('statefulsets', '_all', {
-    labelSelector: ROCKETMQ_LABEL_SELECTOR,
+  } = useResources('deployments', '_all', {
+    labelSelector: HORTONWORKS_LABEL_SELECTOR,
   })
 
-  const rocketmqInstances = useMemo(() => {
-    const items = Array.isArray(statefulsets) ? statefulsets : []
+  const { data: services } = useResources('services', '_all', {
+    labelSelector: HORTONWORKS_LABEL_SELECTOR,
+  })
+
+  const hortonworksInstances = useMemo(() => {
+    const items = Array.isArray(deployments) ? deployments : []
     return items.filter(
-      (ss: StatefulSet) =>
-        ss.metadata?.labels?.['app.kubernetes.io/component'] === 'rocketmq'
+      (d: Deployment) =>
+        d.metadata?.labels?.['app.kubernetes.io/component'] === 'hortonworks'
     )
-  }, [statefulsets])
+  }, [deployments])
+
+  const nodePortMap = useMemo(() => {
+    const map = new Map<string, number | null>()
+    const svcItems = Array.isArray(services) ? services : []
+    hortonworksInstances.forEach((d) => {
+      const ns = d.metadata?.namespace ?? ''
+      const instanceName = d.metadata?.name ?? 'hortonworks'
+      const key = `${ns}/${instanceName}`
+      const svc = svcItems.find(
+        (s: Service) =>
+          s.metadata?.namespace === ns &&
+          s.metadata?.name === `${instanceName}-nodeport` &&
+          s.spec?.type === 'NodePort'
+      )
+      const port = svc?.spec?.ports?.[0]?.nodePort
+      map.set(key, port != null ? port : null)
+    })
+    return map
+  }, [services, hortonworksInstances])
 
   const [rowSelection, setRowSelection] = useState({})
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const columnHelper = createColumnHelper<StatefulSet>()
+  const columnHelper = createColumnHelper<Deployment>()
   const columns = useMemo(
     () => [
       columnHelper.display({
@@ -97,7 +121,7 @@ export function RocketmqInstanceTable() {
         header: t('common.name'),
         cell: ({ row }) => (
           <Link
-            to={`/statefulsets/${row.original.metadata!.namespace}/${row.original.metadata!.name}`}
+            to={`/deployments/${row.original.metadata!.namespace}/${row.original.metadata!.name}`}
             className="font-medium text-blue-500 hover:underline"
           >
             {row.original.metadata!.name}
@@ -128,18 +152,32 @@ export function RocketmqInstanceTable() {
         },
       }),
       columnHelper.display({
-        id: 'domain',
-        header: t('rocketmq.domain', 'NameServer Address'),
+        id: 'nodeport',
+        header: t('hortonworks.nodePort', 'NodePort'),
         cell: ({ row }) => {
           const ns = row.original.metadata?.namespace ?? ''
-          const name = row.original.metadata?.name ?? 'rocketmq'
-          const domain = `${name}.${ns}.svc.cluster.local:9876`
+          const name = row.original.metadata?.name ?? 'hortonworks'
+          const port = nodePortMap.get(`${ns}/${name}`)
+          return (
+            <span className="font-mono text-sm">
+              {port != null ? port : '-'}
+            </span>
+          )
+        },
+      }),
+      columnHelper.display({
+        id: 'domain',
+        header: t('hortonworks.domain', 'Schema Registry URL'),
+        cell: ({ row }) => {
+          const ns = row.original.metadata?.namespace ?? ''
+          const name = row.original.metadata?.name ?? 'hortonworks'
+          const domain = `${name}.${ns}.svc.cluster.local:9090`
           const handleCopy = () => {
             navigator.clipboard
               .writeText(domain)
               .then(() => toast.success(t('common.copied')))
               .catch(() =>
-                toast.error(t('rocketmq.copyFailed', 'Copy failed'))
+                toast.error(t('hortonworks.copyFailed', 'Copy failed'))
               )
           }
           return (
@@ -176,19 +214,19 @@ export function RocketmqInstanceTable() {
         cell: ({ row }) => (
           <Button variant="outline" size="sm" asChild>
             <Link
-              to={`/statefulsets/${row.original.metadata!.namespace}/${row.original.metadata!.name}`}
+              to={`/deployments/${row.original.metadata!.namespace}/${row.original.metadata!.name}`}
             >
-              {t('rocketmq.viewDetail', 'View Detail')}
+              {t('hortonworks.viewDetail', 'View Detail')}
             </Link>
           </Button>
         ),
       }),
     ],
-    [columnHelper, t]
+    [columnHelper, t, nodePortMap]
   )
 
   const table = useReactTable({
-    data: rocketmqInstances,
+    data: hortonworksInstances,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -212,18 +250,12 @@ export function RocketmqInstanceTable() {
     setIsDeleting(true)
     try {
       for (const row of selectedRows) {
-        const ss = row.original
-        const name = ss.metadata?.name ?? 'rocketmq'
-        const namespace = ss.metadata?.namespace ?? ''
+        const d = row.original
+        const name = d.metadata?.name ?? 'hortonworks'
+        const namespace = d.metadata?.namespace ?? ''
         if (!namespace) continue
-
         try {
-          await deleteResource('statefulsets', `${name}-broker`, namespace)
-        } catch {
-          // ignore
-        }
-        try {
-          await deleteResource('statefulsets', name, namespace)
+          await deleteResource('deployments', name, namespace)
         } catch (e) {
           toast.error(`${name}/${namespace}: ${translateError(e, t)}`)
           continue
@@ -234,7 +266,7 @@ export function RocketmqInstanceTable() {
           // ignore
         }
         try {
-          await deleteResource('services', `${name}-headless`, namespace)
+          await deleteResource('services', `${name}-nodeport`, namespace)
         } catch {
           // ignore
         }
@@ -243,54 +275,17 @@ export function RocketmqInstanceTable() {
         } catch {
           // ignore
         }
-        try {
-          await deleteResource('configmaps', `${name}-broker`, namespace)
-        } catch {
-          // ignore
-        }
-        for (let i = 0; i < 2; i++) {
-          try {
-            await deleteResource(
-              'persistentvolumeclaims',
-              `exchange-namesrv-storage-${name}-${i}`,
-              namespace
-            )
-          } catch {
-            // ignore
-          }
-        }
-        for (let i = 0; i < 4; i++) {
-          try {
-            await deleteResource(
-              'persistentvolumeclaims',
-              `data-${name}-broker-${i}`,
-              namespace
-            )
-          } catch {
-            // ignore
-          }
-          try {
-            await deleteResource(
-              'persistentvolumeclaims',
-              `logs-${name}-broker-${i}`,
-              namespace
-            )
-          } catch {
-            // ignore
-          }
-        }
       }
       toast.success(
-        t('rocketmq.deleteSuccess', 'Deleted {{count}} RocketMQ instance(s)', {
+        t('hortonworks.deleteSuccess', 'Deleted {{count}} Hortonworks instance(s)', {
           count: selectedCount,
         })
       )
       setRowSelection({})
       setDeleteDialogOpen(false)
-      queryClient.invalidateQueries({ queryKey: ['statefulsets'] })
+      queryClient.invalidateQueries({ queryKey: ['deployments'] })
       queryClient.invalidateQueries({ queryKey: ['services'] })
       queryClient.invalidateQueries({ queryKey: ['configmaps'] })
-      queryClient.invalidateQueries({ queryKey: ['persistentvolumeclaims'] })
     } catch (err) {
       toast.error(translateError(err, t))
     } finally {
@@ -333,12 +328,12 @@ export function RocketmqInstanceTable() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {t('rocketmq.deleteConfirmTitle', 'Confirm Delete')}
+              {t('hortonworks.deleteConfirmTitle', 'Confirm Delete')}
             </DialogTitle>
             <DialogDescription>
               {t(
-                'rocketmq.deleteConfirmDesc',
-                'This will delete {{count}} selected RocketMQ instance(s) and their associated NameServer, Broker, Services, ConfigMaps and PVCs',
+                'hortonworks.deleteConfirmDesc',
+                'This will delete {{count}} selected Hortonworks instance(s) and their associated Services and ConfigMaps',
                 { count: selectedCount }
               )}
             </DialogDescription>
@@ -385,8 +380,8 @@ export function RocketmqInstanceTable() {
                   className="h-24 text-center text-muted-foreground"
                 >
                   {t(
-                    'rocketmq.noInstances',
-                    'No RocketMQ instances. Click the button above to create one.'
+                    'hortonworks.noInstances',
+                    'No Hortonworks instances. Click the button above to create one.'
                   )}
                 </TableCell>
               </TableRow>
@@ -407,11 +402,11 @@ export function RocketmqInstanceTable() {
           </TableBody>
         </Table>
       </div>
-      {rocketmqInstances.length > 0 && (
+      {hortonworksInstances.length > 0 && (
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">
-            {t('rocketmq.totalInstances', '{{count}} instance(s) total', {
-              count: rocketmqInstances.length,
+            {t('hortonworks.totalInstances', '{{count}} instance(s) total', {
+              count: hortonworksInstances.length,
             })}
           </span>
           <div className="flex gap-2">

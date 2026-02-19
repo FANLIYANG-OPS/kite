@@ -45,7 +45,7 @@ import {
 } from '@tanstack/react-table'
 import { Input } from '@/components/ui/input'
 
-const REDIS_LABEL_SELECTOR = 'app.kubernetes.io/name=redis'
+const REDIS_LABEL_SELECTOR = 'app.kubernetes.io/component=redis'
 
 export function RedisInstanceTable() {
   const { t } = useTranslation()
@@ -66,9 +66,7 @@ export function RedisInstanceTable() {
   const redisInstances = useMemo(() => {
     const items = Array.isArray(statefulsets) ? statefulsets : []
     return items.filter(
-      (ss) =>
-        ss.metadata?.labels?.['app.kubernetes.io/name'] === 'redis' ||
-        ss.metadata?.name === 'redis'
+      (ss) => ss.metadata?.labels?.['app.kubernetes.io/component'] === 'redis'
     )
   }, [statefulsets])
 

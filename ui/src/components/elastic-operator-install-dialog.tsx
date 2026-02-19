@@ -3,7 +3,7 @@ import { IconLoader2 } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
-import { applyResource, generateRedisYamls, useResources } from '@/lib/api'
+import { applyResource, generateElasticOperatorYamls, useResources } from '@/lib/api'
 import { translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,9 +19,8 @@ import { Label } from '@/components/ui/label'
 
 import { NamespaceSelector } from './selector/namespace-selector'
 
-const DEFAULT_NAME = 'redis'
+const DEFAULT_NAME = 'elastic'
 const DEFAULT_NAMESPACE = 'middleware'
-const DEFAULT_PASSWORD = '7xZcqmu!cACCeer'
 
 async function ensureNamespace(namespace: string): Promise<void> {
   const nsYaml = `apiVersion: v1
@@ -33,74 +32,67 @@ metadata:
     await applyResource(nsYaml.trim())
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    if (!msg.includes('AlreadyExists') && !msg.includes('already exists')) {
-      throw err
-    }
+    if (!msg.includes('AlreadyExists') && !msg.includes('already exists')) throw err
   }
 }
 
-interface RedisCreateDialogProps {
+interface ElasticOperatorInstallDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
 }
 
-export function RedisCreateDialog({
+export function ElasticOperatorInstallDialog({
   open,
   onOpenChange,
   onSuccess,
-}: RedisCreateDialogProps) {
+}: ElasticOperatorInstallDialogProps) {
   const { t } = useTranslation()
   const { data: namespaces } = useResources('namespaces')
   const [name, setName] = useState(DEFAULT_NAME)
   const [namespace, setNamespace] = useState(DEFAULT_NAMESPACE)
-  const [password, setPassword] = useState(DEFAULT_PASSWORD)
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (open && namespaces?.length) {
       const nsNames = namespaces.map((n) => n.metadata?.name).filter(Boolean)
-      const hasDefault = nsNames.includes(DEFAULT_NAMESPACE)
-      if (!hasDefault && nsNames[0]) {
+      if (!nsNames.includes(DEFAULT_NAMESPACE) && nsNames[0]) {
         setNamespace(nsNames[0])
       }
     }
   }, [open, namespaces])
 
-  const handleCreate = async () => {
+  const handleInstall = async () => {
     const instanceName = name.trim() || DEFAULT_NAME
     if (!/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(instanceName)) {
-      toast.error(t('redis.nameInvalid', 'Name must be a valid Kubernetes resource name'))
+      toast.error(
+        t('elasticOperator.nameInvalid', 'Name must be a valid Kubernetes resource name')
+      )
       return
     }
     if (!namespace?.trim()) {
-      toast.error(t('redis.namespaceRequired', 'Namespace is required'))
+      toast.error(t('elasticOperator.namespaceRequired', 'Namespace is required'))
       return
     }
-    if (!password?.trim()) {
-      toast.error(t('redis.passwordRequired', 'Password is required'))
-      return
-    }
-
     setIsLoading(true)
     try {
       await ensureNamespace(namespace.trim())
-      const { yamls } = await generateRedisYamls({
+      const { yamls } = await generateElasticOperatorYamls({
         name: instanceName,
         namespace: namespace.trim(),
-        password: password.trim(),
       })
       for (const yaml of yamls) {
         await applyResource(yaml.trim())
       }
-      toast.success(t('redis.createSuccess', 'Redis created successfully'))
+      toast.success(
+        t('elasticOperator.installSuccess', 'Elastic Operator installed successfully')
+      )
       setName(DEFAULT_NAME)
       setNamespace(DEFAULT_NAMESPACE)
-      setPassword(DEFAULT_PASSWORD)
       onOpenChange(false)
       onSuccess?.()
     } catch (err) {
-      console.error('Failed to create Redis', err)
+      console.error('Failed to install Elastic Operator', err)
       toast.error(translateError(err, t))
     } finally {
       setIsLoading(false)
@@ -110,7 +102,6 @@ export function RedisCreateDialog({
   const handleCancel = () => {
     setName(DEFAULT_NAME)
     setNamespace(DEFAULT_NAMESPACE)
-    setPassword(DEFAULT_PASSWORD)
     onOpenChange(false)
   }
 
@@ -118,15 +109,19 @@ export function RedisCreateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{t('redis.createTitle', 'Create Redis')}</DialogTitle>
+          <DialogTitle>
+            {t('elasticOperator.installTitle', 'Install Elastic Operator')}
+          </DialogTitle>
           <DialogDescription>
-            {t('redis.createDescription', 'Create Redis Sentinel cluster (from tmp/redis.yaml template)')}
+            {t(
+              'elasticOperator.installDescription',
+              'Install ECK Operator (CRDs + StatefulSet, RBAC, Webhooks). If CRDs already exist, they will be updated.'
+            )}
           </DialogDescription>
         </DialogHeader>
-
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="name">{t('redis.instanceName', 'Instance Name')}</Label>
+            <Label htmlFor="name">{t('elasticOperator.instanceName', 'Instance Name')}</Label>
             <Input
               id="name"
               value={name}
@@ -134,45 +129,29 @@ export function RedisCreateDialog({
               placeholder={DEFAULT_NAME}
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="namespace">{t('common.namespace')}</Label>
             <div className="w-full max-w-xs">
               <NamespaceSelector
                 selectedNamespace={namespace}
                 handleNamespaceChange={setNamespace}
+                extraOptions={[DEFAULT_NAMESPACE]}
               />
             </div>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password">{t('redis.password', 'Password')}</Label>
-            <Input
-              id="password"
-              type="text"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={DEFAULT_PASSWORD}
-            />
-          </div>
         </div>
-
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            disabled={isLoading}
-          >
+          <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={handleCreate} disabled={isLoading}>
+          <Button onClick={handleInstall} disabled={isLoading}>
             {isLoading ? (
               <>
                 <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t('common.creating')}
+                {t('elasticOperator.installing', 'Installing...')}
               </>
             ) : (
-              t('common.create')
+              t('elasticOperator.install', 'Install')
             )}
           </Button>
         </DialogFooter>

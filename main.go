@@ -193,6 +193,12 @@ func setupAPIRouter(r *gin.RouterGroup, cm *cluster.ClusterManager) {
 
 		resourceApplyHandler := handlers.NewResourceApplyHandler()
 		api.POST("/resources/apply", resourceApplyHandler.ApplyResource)
+		api.POST("/resources/generate/redis", handlers.GenerateRedis)
+		api.POST("/resources/generate/rocketmq", handlers.GenerateRocketMQ)
+		api.POST("/resources/generate/hortonworks", handlers.GenerateHortonworks)
+		api.POST("/resources/generate/elastic-operator", handlers.GenerateElasticOperator)
+		api.POST("/resources/generate/elasticsearch", handlers.GenerateElasticsearch)
+		api.POST("/resources/generate/dolphinscheduler", handlers.GenerateDolphinScheduler)
 
 		api.GET("/image/tags", handlers.GetImageTags)
 		api.GET("/templates", handlers.ListTemplates)

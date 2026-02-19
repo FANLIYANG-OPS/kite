@@ -1,0 +1,138 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{.Name}}-broker
+  namespace: {{.Namespace}}
+  labels:
+    app.kubernetes.io/instance: {{.Namespace}}
+    app.kubernetes.io/name: {{.Name}}
+    app.kubernetes.io/version: 4.5.0
+    app.kubernetes.io/role: broker
+    app.kubernetes.io/component: rocketmq
+spec:
+  podManagementPolicy: Parallel
+  replicas: 4
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{.Namespace}}
+      app.kubernetes.io/name: {{.Name}}
+      app.kubernetes.io/version: 4.5.0
+      app.kubernetes.io/role: broker
+      app.kubernetes.io/component: rocketmq
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{.Namespace}}
+        app.kubernetes.io/name: {{.Name}}
+        app.kubernetes.io/version: 4.5.0
+        app.kubernetes.io/role: broker
+        app.kubernetes.io/component: rocketmq
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/instance: {{.Namespace}}
+                  app.kubernetes.io/name: {{.Name}}
+                  app.kubernetes.io/version: 4.5.0
+                  app.kubernetes.io/role: broker
+                  app.kubernetes.io/component: rocketmq
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+      containers:
+      - command: ["sh","mqbroker","-c","/home/rocketmq/store/broker.conf"]
+        image: apache/rocketmq:4.5.0
+        imagePullPolicy: Always
+        name: broker
+        ports:
+        - containerPort: 10909
+          name: vip
+          protocol: TCP
+        - containerPort: 10911
+          name: main
+          protocol: TCP
+        - containerPort: 10912
+          name: ha
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 1
+            memory: 2Gi
+          requests:
+            cpu: 1
+            memory: 2Gi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /home/rocketmq/store
+          name: data
+        - mountPath: /home/rocketmq/logs
+          name: logs
+        - mountPath: /home/rocketmq/rocketmq-4.5.0/bin/runbroker.sh
+          name: broker-config
+          readOnly: true
+          subPath: runbroker.sh
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+      initContainers:
+      - command: ["bash", "/opt/scripts/init.sh"]
+        env:
+        - name: BROKER_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: NAMESRV_ADDR
+          value: {{.Name}}-0.{{.Name}}-headless.{{.Namespace}}.svc.cluster.local:9876;{{.Name}}-1.{{.Name}}-headless.{{.Namespace}}.svc.cluster.local:9876
+        image: apache/rocketmq:4.5.0
+        imagePullPolicy: Always
+        name: broker-init
+        resources: {}
+        volumeMounts:
+        - mountPath: /opt/scripts
+          name: config
+        - mountPath: /home/rocketmq/store
+          name: data
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: {{.Name}}-broker
+        name: config
+      - configMap:
+          defaultMode: 420
+          items:
+          - key: runbroker.sh
+            path: runbroker.sh
+          name: {{.Name}}-broker
+        name: broker-config
+  updateStrategy:
+    type: RollingUpdate
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 8Gi
+      storageClassName: local
+      volumeMode: Filesystem
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: logs
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 8Gi
+      storageClassName: local
+      volumeMode: Filesystem

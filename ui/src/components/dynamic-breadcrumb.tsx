@@ -55,8 +55,12 @@ export function DynamicBreadcrumb() {
       minio: t('nav.minio'),
       kafka: t('nav.kafka'),
       rocketmq: t('nav.rocketmq'),
+      hortonworks: t('nav.hortonworks'),
+      dolphinscheduler: t('nav.dolphinscheduler'),
+      elasticsearch: t('nav.elasticsearch'),
       doris: t('nav.doris'),
       'doris-operator': t('nav.dorisOperator'),
+      'elastic-operator': t('nav.elasticOperator'),
       grafana: t('nav.grafana'),
     }
 

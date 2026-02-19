@@ -1,13 +1,6 @@
 import { useMemo, useState } from 'react'
-import {
-  IconCircleCheckFilled,
-  IconCopy,
-  IconLoader,
-  IconRefresh,
-  IconTrash,
-} from '@tabler/icons-react'
-import { createColumnHelper } from '@tanstack/react-table'
-import { StatefulSet } from 'kubernetes-types/apps/v1'
+import { IconLoader, IconRefresh, IconTrash } from '@tabler/icons-react'
+import { Service } from 'kubernetes-types/core/v1'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -44,38 +37,37 @@ import {
 } from '@tanstack/react-table'
 import { Input } from '@/components/ui/input'
 
-const ROCKETMQ_LABEL_SELECTOR = 'app.kubernetes.io/component=rocketmq'
+const ELASTICSEARCH_LABEL_SELECTOR = 'app.kubernetes.io/component=elasticsearch'
 
-export function RocketmqInstanceTable() {
+export function ElasticsearchInstanceTable() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
 
   const {
-    data: statefulsets,
+    data: services,
     isLoading,
     refetch,
-  } = useResources('statefulsets', '_all', {
-    labelSelector: ROCKETMQ_LABEL_SELECTOR,
+  } = useResources('services', '_all', {
+    labelSelector: ELASTICSEARCH_LABEL_SELECTOR,
   })
 
-  const rocketmqInstances = useMemo(() => {
-    const items = Array.isArray(statefulsets) ? statefulsets : []
+  const esServices = useMemo(() => {
+    const items = Array.isArray(services) ? services : []
     return items.filter(
-      (ss: StatefulSet) =>
-        ss.metadata?.labels?.['app.kubernetes.io/component'] === 'rocketmq'
+      (s: Service) =>
+        s.metadata?.labels?.['app.kubernetes.io/component'] === 'elasticsearch'
     )
-  }, [statefulsets])
+  }, [services])
 
   const [rowSelection, setRowSelection] = useState({})
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const columnHelper = createColumnHelper<StatefulSet>()
   const columns = useMemo(
     () => [
-      columnHelper.display({
+      {
         id: 'select',
-        header: ({ table }) => (
+        header: ({ table }: any) => (
           <Checkbox
             checked={
               table.getIsAllPageRowsSelected() ||
@@ -86,109 +78,73 @@ export function RocketmqInstanceTable() {
             }
           />
         ),
-        cell: ({ row }) => (
+        cell: ({ row }: any) => (
           <Checkbox
             checked={row.getIsSelected()}
             onCheckedChange={(value) => row.toggleSelected(!!value)}
           />
         ),
-      }),
-      columnHelper.accessor('metadata.name', {
+      },
+      {
+        id: 'name',
         header: t('common.name'),
-        cell: ({ row }) => (
-          <Link
-            to={`/statefulsets/${row.original.metadata!.namespace}/${row.original.metadata!.name}`}
-            className="font-medium text-blue-500 hover:underline"
-          >
-            {row.original.metadata!.name}
-          </Link>
-        ),
-      }),
-      columnHelper.accessor('metadata.namespace', {
+        cell: ({ row }: any) => {
+          const ns = row.original.metadata?.namespace ?? ''
+          const name = row.original.metadata?.name ?? ''
+          return (
+            <Link
+              to={`/services/${ns}/${name}`}
+              className="font-medium text-blue-500 hover:underline"
+            >
+              {name}
+            </Link>
+          )
+        },
+      },
+      {
+        id: 'namespace',
         header: t('common.namespace'),
-        cell: ({ getValue }) => getValue() ?? '-',
-      }),
-      columnHelper.display({
+        cell: ({ row }: any) => row.original.metadata?.namespace ?? '-',
+      },
+      {
         id: 'status',
         header: t('common.status'),
-        cell: ({ row }) => {
-          const ready = row.original.status?.readyReplicas ?? 0
-          const desired = row.original.status?.replicas ?? 0
-          const isReady = ready === desired && desired > 0
-          return (
-            <Badge variant="outline" className="text-muted-foreground px-1.5">
-              {isReady ? (
-                <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
-              ) : (
-                <IconLoader className="animate-spin" />
-              )}
-              {isReady ? t('deployments.available') : t('common.loading')}
-            </Badge>
-          )
-        },
-      }),
-      columnHelper.display({
+        cell: () => (
+          <Badge variant="outline" className="text-muted-foreground px-1.5">
+            <IconLoader className="h-3.5 w-3.5 animate-spin" />
+            {t('common.loading')}
+          </Badge>
+        ),
+      },
+      {
         id: 'domain',
-        header: t('rocketmq.domain', 'NameServer Address'),
-        cell: ({ row }) => {
+        header: t('elasticsearch.domain', 'Kibana URL'),
+        cell: ({ row }: any) => {
           const ns = row.original.metadata?.namespace ?? ''
-          const name = row.original.metadata?.name ?? 'rocketmq'
-          const domain = `${name}.${ns}.svc.cluster.local:9876`
-          const handleCopy = () => {
-            navigator.clipboard
-              .writeText(domain)
-              .then(() => toast.success(t('common.copied')))
-              .catch(() =>
-                toast.error(t('rocketmq.copyFailed', 'Copy failed'))
-              )
-          }
+          const name = row.original.metadata?.name ?? ''
+          const domain = `${name}.${ns}.svc.cluster.local:5601`
           return (
-            <div className="flex items-center gap-1">
-              <span
-                className="font-mono text-sm truncate max-w-[220px]"
-                title={domain}
-              >
-                {domain}
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 shrink-0"
-                onClick={handleCopy}
-              >
-                <IconCopy className="h-3.5 w-3.5" />
-              </Button>
-            </div>
+            <span className="font-mono text-sm" title={domain}>
+              {domain}
+            </span>
           )
         },
-      }),
-      columnHelper.accessor('metadata.creationTimestamp', {
+      },
+      {
+        id: 'created',
         header: t('common.created'),
-        cell: ({ getValue }) => (
+        cell: ({ row }: any) => (
           <span className="text-muted-foreground text-sm">
-            {formatDate(getValue() || '')}
+            {formatDate(row.original.metadata?.creationTimestamp || '')}
           </span>
         ),
-      }),
-      columnHelper.display({
-        id: 'actions',
-        header: t('common.actions'),
-        cell: ({ row }) => (
-          <Button variant="outline" size="sm" asChild>
-            <Link
-              to={`/statefulsets/${row.original.metadata!.namespace}/${row.original.metadata!.name}`}
-            >
-              {t('rocketmq.viewDetail', 'View Detail')}
-            </Link>
-          </Button>
-        ),
-      }),
+      },
     ],
-    [columnHelper, t]
+    [t]
   )
 
   const table = useReactTable({
-    data: rocketmqInstances,
+    data: esServices,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -197,7 +153,7 @@ export function RocketmqInstanceTable() {
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     state: { rowSelection },
-    getRowId: (row) =>
+    getRowId: (row: Service) =>
       `${row.metadata?.namespace ?? ''}/${row.metadata?.name ?? ''}`,
     initialState: {
       pagination: { pageSize: 10 },
@@ -212,85 +168,27 @@ export function RocketmqInstanceTable() {
     setIsDeleting(true)
     try {
       for (const row of selectedRows) {
-        const ss = row.original
-        const name = ss.metadata?.name ?? 'rocketmq'
-        const namespace = ss.metadata?.namespace ?? ''
-        if (!namespace) continue
+        const svc: Service = row.original
+        const name = svc.metadata?.name ?? ''
+        const namespace = svc.metadata?.namespace ?? ''
+        if (!namespace || !name) continue
 
         try {
-          await deleteResource('statefulsets', `${name}-broker`, namespace)
-        } catch {
-          // ignore
-        }
-        try {
-          await deleteResource('statefulsets', name, namespace)
+          await deleteResource('services', name, namespace)
         } catch (e) {
           toast.error(`${name}/${namespace}: ${translateError(e, t)}`)
-          continue
         }
-        try {
-          await deleteResource('services', name, namespace)
-        } catch {
-          // ignore
-        }
-        try {
-          await deleteResource('services', `${name}-headless`, namespace)
-        } catch {
-          // ignore
-        }
-        try {
-          await deleteResource('configmaps', name, namespace)
-        } catch {
-          // ignore
-        }
-        try {
-          await deleteResource('configmaps', `${name}-broker`, namespace)
-        } catch {
-          // ignore
-        }
-        for (let i = 0; i < 2; i++) {
-          try {
-            await deleteResource(
-              'persistentvolumeclaims',
-              `exchange-namesrv-storage-${name}-${i}`,
-              namespace
-            )
-          } catch {
-            // ignore
-          }
-        }
-        for (let i = 0; i < 4; i++) {
-          try {
-            await deleteResource(
-              'persistentvolumeclaims',
-              `data-${name}-broker-${i}`,
-              namespace
-            )
-          } catch {
-            // ignore
-          }
-          try {
-            await deleteResource(
-              'persistentvolumeclaims',
-              `logs-${name}-broker-${i}`,
-              namespace
-            )
-          } catch {
-            // ignore
-          }
-        }
+        // Best-effort delete of associated resources is omitted here because
+        // elasticsearch CRs are managed via the operator CRD pages.
       }
       toast.success(
-        t('rocketmq.deleteSuccess', 'Deleted {{count}} RocketMQ instance(s)', {
+        t('elasticsearch.deleteSuccess', 'Deleted {{count}} Elasticsearch instance(s)', {
           count: selectedCount,
         })
       )
       setRowSelection({})
       setDeleteDialogOpen(false)
-      queryClient.invalidateQueries({ queryKey: ['statefulsets'] })
       queryClient.invalidateQueries({ queryKey: ['services'] })
-      queryClient.invalidateQueries({ queryKey: ['configmaps'] })
-      queryClient.invalidateQueries({ queryKey: ['persistentvolumeclaims'] })
     } catch (err) {
       toast.error(translateError(err, t))
     } finally {
@@ -333,12 +231,12 @@ export function RocketmqInstanceTable() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {t('rocketmq.deleteConfirmTitle', 'Confirm Delete')}
+              {t('elasticsearch.deleteConfirmTitle', 'Confirm Delete')}
             </DialogTitle>
             <DialogDescription>
               {t(
-                'rocketmq.deleteConfirmDesc',
-                'This will delete {{count}} selected RocketMQ instance(s) and their associated NameServer, Broker, Services, ConfigMaps and PVCs',
+                'elasticsearch.deleteConfirmDesc',
+                'This will delete {{count}} selected Elasticsearch instance(s) and their associated Kibana, Secret and Elasticsearch resources',
                 { count: selectedCount }
               )}
             </DialogDescription>
@@ -351,16 +249,13 @@ export function RocketmqInstanceTable() {
             >
               {t('common.cancel')}
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteSelected}
-              disabled={isDeleting}
-            >
+            <Button variant="destructive" onClick={handleDeleteSelected} disabled={isDeleting}>
               {isDeleting ? t('common.deleting') : t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -385,8 +280,8 @@ export function RocketmqInstanceTable() {
                   className="h-24 text-center text-muted-foreground"
                 >
                   {t(
-                    'rocketmq.noInstances',
-                    'No RocketMQ instances. Click the button above to create one.'
+                    'elasticsearch.noInstances',
+                    'No Elasticsearch instances. Click the button above to create one.'
                   )}
                 </TableCell>
               </TableRow>
@@ -407,11 +302,11 @@ export function RocketmqInstanceTable() {
           </TableBody>
         </Table>
       </div>
-      {rocketmqInstances.length > 0 && (
+      {esServices.length > 0 && (
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">
-            {t('rocketmq.totalInstances', '{{count}} instance(s) total', {
-              count: rocketmqInstances.length,
+            {t('elasticsearch.totalInstances', '{{count}} instance(s) total', {
+              count: esServices.length,
             })}
           </span>
           <div className="flex gap-2">
@@ -437,3 +332,4 @@ export function RocketmqInstanceTable() {
     </div>
   )
 }
+

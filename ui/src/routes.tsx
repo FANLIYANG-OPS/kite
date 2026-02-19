@@ -19,6 +19,10 @@ import { Overview } from './pages/overview'
 import { RedisPage } from './pages/redis-page'
 import { RedisStandalonePage } from './pages/redis-standalone-page'
 import { RocketmqPage } from './pages/rocketmq-page'
+import { HortonworksPage } from './pages/hortonworks-page'
+import { ElasticsearchPage } from './pages/elasticsearch-page'
+import { ElasticOperatorPage } from './pages/elastic-operator-page'
+import { DolphinschedulerPage } from './pages/dolphinscheduler-page'
 import { ResourceDetail } from './pages/resource-detail'
 import { ResourceList } from './pages/resource-list'
 import { SettingsPage } from './pages/settings'
@@ -108,12 +112,28 @@ export const router = createBrowserRouter(
           element: <RocketmqPage />,
         },
         {
+          path: 'applications/hortonworks',
+          element: <HortonworksPage />,
+        },
+        {
+          path: 'applications/dolphinscheduler',
+          element: <DolphinschedulerPage />,
+        },
+        {
+          path: 'applications/elasticsearch',
+          element: <ElasticsearchPage />,
+        },
+        {
           path: 'applications/doris',
           element: <DorisPage />,
         },
         {
           path: 'applications/doris-operator',
           element: <DorisOperatorPage />,
+        },
+        {
+          path: 'applications/elastic-operator',
+          element: <ElasticOperatorPage />,
         },
         {
           path: 'crds/:crd',

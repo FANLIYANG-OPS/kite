@@ -1,0 +1,173 @@
+
+apiVersion: v1
+data:
+  password: bExQNnAxQng3N1A4cDE4cWk3c0Q4OHdk
+  roles: c3VwZXJ1c2Vy
+  username: ZWxhc3RpYw==
+kind: Secret
+metadata:
+  name: {{.Name}}-secret
+  namespace: {{.Namespace}}
+  labels:
+    app.kubernetes.io/instance: {{.Namespace}}
+    app.kubernetes.io/name: {{.Name}}-secret
+    app.kubernetes.io/version: 8.11.0
+    app.kubernetes.io/component: elasticsearch
+type: kubernetes.io/basic-auth
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: {{.Namespace}}
+    app.kubernetes.io/name: {{.Name}}-kibana-service
+    app.kubernetes.io/version: 8.11.0
+    app.kubernetes.io/component: elasticsearch
+  name: {{.Name}}-kibana-service
+  namespace: {{.Namespace}}
+spec:
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: http
+    port: 5601
+    protocol: TCP
+    targetPort: 5601
+  selector:
+    common.k8s.elastic.co/type: kibana
+    kibana.k8s.elastic.co/name: {{.Name}}-kibana
+  sessionAffinity: None
+  type: ClusterIP
+
+---
+
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: {{.Name}}-kibana
+  labels:
+    app.kubernetes.io/instance: {{.Namespace}}
+    app.kubernetes.io/name: {{.Name}}-kibana
+    app.kubernetes.io/version: 8.11.0
+    app.kubernetes.io/component: elasticsearch
+spec:
+  count: 1
+  elasticsearchRef:
+    name: {{.Name}}
+  enterpriseSearchRef: {}
+  http:
+    service:
+      metadata: {}
+      spec: {}
+    tls:
+      certificate: {}
+      selfSignedCertificate:
+        disabled: true
+  image: kibana/kibana:8.11.0
+  monitoring:
+    logs: {}
+    metrics: {}
+  podTemplate:
+    metadata:
+    spec:
+      containers:
+      - env:
+        - name: NODE_OPTIONS
+          value: --max-old-space-size=2048
+        name: kibana
+        resources:
+          limits:
+            cpu: "2"
+            memory: 2560Mi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+  version: 8.11.0
+
+---
+
+
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: {{.Name}}
+  namespace: {{.Namespace}}
+  labels:
+    app.kubernetes.io/instance: {{.Namespace}}
+    app.kubernetes.io/name: {{.Name}}
+    app.kubernetes.io/version: 8.11.0
+    app.kubernetes.io/component: elasticsearch
+spec:
+  auth:
+    fileRealm:
+    - secretName: {{.Name}}-secret
+  http:
+    service:
+      metadata: {}
+      spec: {}
+    tls:
+      certificate: {}
+      selfSignedCertificate:
+        disabled: true
+  image: elasticsearch/elasticsearch-plugin:8.11.0
+  monitoring:
+    logs: {}
+    metrics: {}
+  nodeSets:
+  - config:
+      node.roles:
+      - master
+      - data
+      xpack.ml.enabled: true
+    count: 3
+    name: exchange
+    podTemplate:
+      metadata:
+        creationTimestamp: null
+      spec:
+        containers:
+        - env:
+          - name: ES_JAVA_OPTS
+            value: -Xms2g -Xmx2g
+          name: elasticsearch
+          resources:
+            limits:
+              cpu: "1"
+              memory: 4Gi
+            requests:
+              cpu: "1"
+              memory: 4Gi
+        initContainers:
+        - command:
+          - sh
+          - -c
+          - sysctl -w vm.max_map_count=262144
+          name: sysctl
+          resources: {}
+          securityContext:
+            privileged: true
+            runAsUser: 0
+    volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        storageClassName: local
+  remoteClusterServer: {}
+  transport:
+    service:
+      metadata: {}
+      spec: {}
+    tls:
+      certificate: {}
+      certificateAuthorities: {}
+  updateStrategy:
+    changeBudget: {}
+  version: 8.11.0

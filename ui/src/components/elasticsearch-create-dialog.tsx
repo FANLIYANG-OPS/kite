@@ -3,7 +3,7 @@ import { IconLoader2 } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
-import { applyResource, generateRedisYamls, useResources } from '@/lib/api'
+import { applyResource, generateElasticsearchYamls, useResources } from '@/lib/api'
 import { translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,9 +19,8 @@ import { Label } from '@/components/ui/label'
 
 import { NamespaceSelector } from './selector/namespace-selector'
 
-const DEFAULT_NAME = 'redis'
+const DEFAULT_NAME = 'elasticsearch'
 const DEFAULT_NAMESPACE = 'middleware'
-const DEFAULT_PASSWORD = '7xZcqmu!cACCeer'
 
 async function ensureNamespace(namespace: string): Promise<void> {
   const nsYaml = `apiVersion: v1
@@ -39,22 +38,21 @@ metadata:
   }
 }
 
-interface RedisCreateDialogProps {
+interface ElasticsearchCreateDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
 }
 
-export function RedisCreateDialog({
+export function ElasticsearchCreateDialog({
   open,
   onOpenChange,
   onSuccess,
-}: RedisCreateDialogProps) {
+}: ElasticsearchCreateDialogProps) {
   const { t } = useTranslation()
   const { data: namespaces } = useResources('namespaces')
   const [name, setName] = useState(DEFAULT_NAME)
   const [namespace, setNamespace] = useState(DEFAULT_NAMESPACE)
-  const [password, setPassword] = useState(DEFAULT_PASSWORD)
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
@@ -70,37 +68,35 @@ export function RedisCreateDialog({
   const handleCreate = async () => {
     const instanceName = name.trim() || DEFAULT_NAME
     if (!/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(instanceName)) {
-      toast.error(t('redis.nameInvalid', 'Name must be a valid Kubernetes resource name'))
+      toast.error(
+        t('elasticsearch.nameInvalid', 'Name must be a valid Kubernetes resource name')
+      )
       return
     }
     if (!namespace?.trim()) {
-      toast.error(t('redis.namespaceRequired', 'Namespace is required'))
-      return
-    }
-    if (!password?.trim()) {
-      toast.error(t('redis.passwordRequired', 'Password is required'))
+      toast.error(t('elasticsearch.namespaceRequired', 'Namespace is required'))
       return
     }
 
     setIsLoading(true)
     try {
       await ensureNamespace(namespace.trim())
-      const { yamls } = await generateRedisYamls({
+      const { yamls } = await generateElasticsearchYamls({
         name: instanceName,
         namespace: namespace.trim(),
-        password: password.trim(),
       })
       for (const yaml of yamls) {
         await applyResource(yaml.trim())
       }
-      toast.success(t('redis.createSuccess', 'Redis created successfully'))
+      toast.success(
+        t('elasticsearch.createSuccess', 'Elasticsearch cluster created successfully')
+      )
       setName(DEFAULT_NAME)
       setNamespace(DEFAULT_NAMESPACE)
-      setPassword(DEFAULT_PASSWORD)
       onOpenChange(false)
       onSuccess?.()
     } catch (err) {
-      console.error('Failed to create Redis', err)
+      console.error('Failed to create Elasticsearch', err)
       toast.error(translateError(err, t))
     } finally {
       setIsLoading(false)
@@ -110,7 +106,6 @@ export function RedisCreateDialog({
   const handleCancel = () => {
     setName(DEFAULT_NAME)
     setNamespace(DEFAULT_NAMESPACE)
-    setPassword(DEFAULT_PASSWORD)
     onOpenChange(false)
   }
 
@@ -118,15 +113,22 @@ export function RedisCreateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{t('redis.createTitle', 'Create Redis')}</DialogTitle>
+          <DialogTitle>
+            {t('elasticsearch.createTitle', 'Create Elasticsearch')}
+          </DialogTitle>
           <DialogDescription>
-            {t('redis.createDescription', 'Create Redis Sentinel cluster (from tmp/redis.yaml template)')}
+            {t(
+              'elasticsearch.createDescription',
+              'Create an Elasticsearch cluster with Kibana and Secret (from elasticsearch/elasticsearch-8.11.0.yaml template)'
+            )}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="name">{t('redis.instanceName', 'Instance Name')}</Label>
+            <Label htmlFor="name">
+              {t('elasticsearch.instanceName', 'Instance Name')}
+            </Label>
             <Input
               id="name"
               value={name}
@@ -144,25 +146,10 @@ export function RedisCreateDialog({
               />
             </div>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password">{t('redis.password', 'Password')}</Label>
-            <Input
-              id="password"
-              type="text"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={DEFAULT_PASSWORD}
-            />
-          </div>
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            disabled={isLoading}
-          >
+          <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
             {t('common.cancel')}
           </Button>
           <Button onClick={handleCreate} disabled={isLoading}>
@@ -180,3 +167,4 @@ export function RedisCreateDialog({
     </Dialog>
   )
 }
+

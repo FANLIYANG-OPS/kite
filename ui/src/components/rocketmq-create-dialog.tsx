@@ -3,7 +3,6 @@ import { IconLoader2 } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
-import { applyResource, useResources } from '@/lib/api'
 import { translateError } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,7 +16,11 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-import { generateRocketmqYamls } from './rocketmq-yamls'
+import {
+  applyResource,
+  generateRocketmqYamls,
+  useResources,
+} from '@/lib/api'
 import { NamespaceSelector } from './selector/namespace-selector'
 
 const DEFAULT_NAME = 'rocketmq'
@@ -82,7 +85,10 @@ export function RocketmqCreateDialog({
     setIsLoading(true)
     try {
       await ensureNamespace(namespace.trim())
-      const yamls = generateRocketmqYamls(instanceName, namespace.trim())
+      const { yamls } = await generateRocketmqYamls({
+        name: instanceName,
+        namespace: namespace.trim(),
+      })
       for (const yaml of yamls) {
         await applyResource(yaml.trim())
       }

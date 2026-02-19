@@ -305,6 +305,61 @@ export const applyResource = async (
   })
 }
 
+export const generateRedisYamls = async (params: {
+  name: string
+  namespace: string
+  password: string
+}): Promise<{ yamls: string[] }> => {
+  return await apiClient.post<{ yamls: string[] }>(
+    '/resources/generate/redis',
+    params
+  )
+}
+
+export const generateRocketmqYamls = async (params: {
+  name: string
+  namespace: string
+}): Promise<{ yamls: string[] }> => {
+  return await apiClient.post<{ yamls: string[] }>(
+    '/resources/generate/rocketmq',
+    params
+  )
+}
+
+export const generateHortonworksYamls = async (params: {
+  name: string
+  namespace: string
+}): Promise<{ yamls: string[] }> => {
+  return await apiClient.post<{ yamls: string[] }>(
+    '/resources/generate/hortonworks',
+    params
+  )
+}
+
+export const generateElasticOperatorYamls = async (params: { name: string; namespace: string }): Promise<{ yamls: string[] }> => {
+  return await apiClient.post<{ yamls: string[] }>('/resources/generate/elastic-operator', params)
+}
+
+export const generateElasticsearchYamls = async (params: {
+  name: string
+  namespace: string
+}): Promise<{ yamls: string[] }> => {
+  return await apiClient.post<{ yamls: string[] }>(
+    '/resources/generate/elasticsearch',
+    params
+  )
+}
+
+export const generateDolphinschedulerYamls = async (params: {
+  name: string
+  namespace: string
+}): Promise<{ yamls: string[] }> => {
+  return await apiClient.post<{ yamls: string[] }>(
+    '/resources/generate/dolphinscheduler',
+    params
+  )
+}
+
 export const useResourcesEvents = <T extends ResourceType>(
   resource: T,
   name: string,

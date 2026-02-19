@@ -17,6 +17,8 @@ import { NacosPage } from './pages/nacos-page'
 import { NifiPage } from './pages/nifi-page'
 import { Overview } from './pages/overview'
 import { RedisPage } from './pages/redis-page'
+import { RedisStandalonePage } from './pages/redis-standalone-page'
+import { RocketmqPage } from './pages/rocketmq-page'
 import { ResourceDetail } from './pages/resource-detail'
 import { ResourceList } from './pages/resource-list'
 import { SettingsPage } from './pages/settings'
@@ -70,6 +72,10 @@ export const router = createBrowserRouter(
           element: <RedisPage />,
         },
         {
+          path: 'applications/redis-standalone',
+          element: <RedisStandalonePage />,
+        },
+        {
           path: 'applications/grafana',
           element: <GrafanaPage />,
         },
@@ -96,6 +102,10 @@ export const router = createBrowserRouter(
         {
           path: 'applications/kafka',
           element: <KafkaPage />,
+        },
+        {
+          path: 'applications/rocketmq',
+          element: <RocketmqPage />,
         },
         {
           path: 'applications/doris',

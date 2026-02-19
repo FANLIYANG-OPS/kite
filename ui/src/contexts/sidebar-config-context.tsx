@@ -195,11 +195,13 @@ const defaultMenus: DefaultMenus = {
   'sidebar.groups.applications': [
     { titleKey: 'nav.mysql', url: '/applications/mysql', icon: IconBrandMysql },
     { titleKey: 'nav.redis', url: '/applications/redis', icon: IconDatabase },
+    { titleKey: 'nav.redisStandalone', url: '/applications/redis-standalone', icon: IconDatabase },
     { titleKey: 'nav.zookeeper', url: '/applications/zookeeper', icon: IconDatabase },
     { titleKey: 'nav.nifi', url: '/applications/nifi', icon: IconDatabase },
     { titleKey: 'nav.nacos', url: '/applications/nacos', icon: IconDatabase },
     { titleKey: 'nav.minio', url: '/applications/minio', icon: IconDatabase },
     { titleKey: 'nav.kafka', url: '/applications/kafka', icon: IconDatabase },
+    { titleKey: 'nav.rocketmq', url: '/applications/rocketmq', icon: IconDatabase },
     { titleKey: 'nav.doris', url: '/applications/doris', icon: IconDatabase },
     { titleKey: 'nav.dorisOperator', url: '/applications/doris-operator', icon: IconDatabase },
     { titleKey: 'nav.grafana', url: '/applications/grafana', icon: IconChartBar },

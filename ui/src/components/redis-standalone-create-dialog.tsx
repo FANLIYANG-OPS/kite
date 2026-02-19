@@ -17,10 +17,10 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-import { generateRedisYamls } from './redis-yamls'
+import { generateRedisStandaloneYamls } from './redis-standalone-yamls'
 import { NamespaceSelector } from './selector/namespace-selector'
 
-const DEFAULT_NAME = 'redis'
+const DEFAULT_NAME = 'redis-standalone'
 const DEFAULT_NAMESPACE = 'middleware'
 const DEFAULT_PASSWORD = '7xZcqmu!cACCeer'
 
@@ -40,17 +40,17 @@ metadata:
   }
 }
 
-interface RedisCreateDialogProps {
+interface RedisStandaloneCreateDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
 }
 
-export function RedisCreateDialog({
+export function RedisStandaloneCreateDialog({
   open,
   onOpenChange,
   onSuccess,
-}: RedisCreateDialogProps) {
+}: RedisStandaloneCreateDialogProps) {
   const { t } = useTranslation()
   const { data: namespaces } = useResources('namespaces')
   const [name, setName] = useState(DEFAULT_NAME)
@@ -71,22 +71,24 @@ export function RedisCreateDialog({
   const handleCreate = async () => {
     const instanceName = name.trim() || DEFAULT_NAME
     if (!/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(instanceName)) {
-      toast.error(t('redis.nameInvalid', 'Name must be a valid Kubernetes resource name'))
+      toast.error(
+        t('redisStandalone.nameInvalid', 'Name must be a valid Kubernetes resource name')
+      )
       return
     }
     if (!namespace?.trim()) {
-      toast.error(t('redis.namespaceRequired', 'Namespace is required'))
+      toast.error(t('redisStandalone.namespaceRequired', 'Namespace is required'))
       return
     }
     if (!password?.trim()) {
-      toast.error(t('redis.passwordRequired', 'Password is required'))
+      toast.error(t('redisStandalone.passwordRequired', 'Password is required'))
       return
     }
 
     setIsLoading(true)
     try {
       await ensureNamespace(namespace.trim())
-      const yamls = generateRedisYamls(
+      const yamls = generateRedisStandaloneYamls(
         instanceName,
         namespace.trim(),
         password.trim()
@@ -94,14 +96,16 @@ export function RedisCreateDialog({
       for (const yaml of yamls) {
         await applyResource(yaml.trim())
       }
-      toast.success(t('redis.createSuccess', 'Redis created successfully'))
+      toast.success(
+        t('redisStandalone.createSuccess', 'Redis Standalone created successfully')
+      )
       setName(DEFAULT_NAME)
       setNamespace(DEFAULT_NAMESPACE)
       setPassword(DEFAULT_PASSWORD)
       onOpenChange(false)
       onSuccess?.()
     } catch (err) {
-      console.error('Failed to create Redis', err)
+      console.error('Failed to create Redis Standalone', err)
       toast.error(translateError(err, t))
     } finally {
       setIsLoading(false)
@@ -119,15 +123,20 @@ export function RedisCreateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{t('redis.createTitle', 'Create Redis')}</DialogTitle>
+          <DialogTitle>
+            {t('redisStandalone.createTitle', 'Create Redis Standalone')}
+          </DialogTitle>
           <DialogDescription>
-            {t('redis.createDescription', 'Create Redis Sentinel cluster (from tmp/redis.yaml template)')}
+            {t(
+              'redisStandalone.createDescription',
+              'Create a Redis Standalone instance with ConfigMap, StatefulSet and Service'
+            )}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="name">{t('redis.instanceName', 'Instance Name')}</Label>
+            <Label htmlFor="name">{t('redisStandalone.instanceName', 'Instance Name')}</Label>
             <Input
               id="name"
               value={name}
@@ -142,28 +151,25 @@ export function RedisCreateDialog({
               <NamespaceSelector
                 selectedNamespace={namespace}
                 handleNamespaceChange={setNamespace}
+                extraOptions={[DEFAULT_NAMESPACE]}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">{t('redis.password', 'Password')}</Label>
+            <Label htmlFor="password">{t('redisStandalone.password', 'Password')}</Label>
             <Input
               id="password"
-              type="text"
+              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={DEFAULT_PASSWORD}
+              placeholder="********"
             />
           </div>
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            disabled={isLoading}
-          >
+          <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
             {t('common.cancel')}
           </Button>
           <Button onClick={handleCreate} disabled={isLoading}>

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/zxh326/kite/pkg/common"
 	corev1 "k8s.io/api/core/v1"
@@ -52,6 +53,8 @@ func GenerateNodeAgentName(nodeName string) string {
 	if len(nodeName)+len(common.NodeTerminalPodName)+7 > 63 {
 		maxLength := 63 - len(common.NodeTerminalPodName) - 7
 		truncateNodeName = nodeName[:maxLength]
+		truncateNodeName = strings.TrimRight(truncateNodeName, ".")
+		truncateNodeName = strings.TrimRight(truncateNodeName, "-")
 	}
 	return fmt.Sprintf("%s-%s-%s", common.NodeTerminalPodName, truncateNodeName, RandomString(5))
 }

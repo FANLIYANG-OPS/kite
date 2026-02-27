@@ -2,6 +2,8 @@ package utils
 
 import (
 	"testing"
+
+	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 func TestGetImageRegistryAndRepo(t *testing.T) {
@@ -37,12 +39,14 @@ func TestGenerateNodeAgentName(t *testing.T) {
 		{"shortname"},
 		{"a-very-long-node-name-that-exceeds-the-maximum-length-allowed-for-kubernetes-names"},
 		{"node-with-63-characters-abcdefghijklmnopqrstuvwxyz-123456789101"},
+		{"ip-10-0-10-10.ch-west-2.compute.internal"},
+		{"ip-10-0-10-10.ch-west-2.compute-internal"},
 	}
 
 	for _, tc := range testcase {
 		podName := GenerateNodeAgentName(tc.nodeName)
-		if len(podName) > 63 {
-			t.Errorf("GenerateNodeAgentName(%q) = %q, length %d exceeds 63", tc.nodeName, podName, len(podName))
+		if errs := validation.IsDNS1123Subdomain(podName); len(errs) > 0 {
+			t.Errorf("GenerateNodeAgentName(%q) = %q, invalid DNS subdomain: %v", tc.nodeName, podName, errs)
 		}
 	}
 }

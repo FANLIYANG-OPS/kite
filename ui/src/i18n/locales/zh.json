@@ -242,6 +242,8 @@
       "generalError": "身份验证过程中发生意外错误。",
       "contactSupport": "请重试或联系支持（如果问题仍然存在）。",
       "invalidCredentials": "用户名或密码无效",
+      "insufficient permissions": "权限不足",
+      "invalid credentials": "用户名或密码无效",
       "unknownError": "发生未知错误"
     }
   },

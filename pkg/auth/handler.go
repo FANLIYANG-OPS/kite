@@ -65,13 +65,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 func (h *AuthHandler) PasswordLogin(c *gin.Context) {
 	var req common.PasswordLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
 		return
 	}
 
 	user, err := model.GetUserByUsername(req.Username)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
 
@@ -81,7 +81,13 @@ func (h *AuthHandler) PasswordLogin(c *gin.Context) {
 	}
 
 	if !user.Enabled {
-		c.JSON(http.StatusForbidden, gin.H{"error": "user disabled"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions"})
+		return
+	}
+
+	roles := rbac.GetUserRoles(*user)
+	if len(roles) == 0 {
+		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions"})
 		return
 	}
 

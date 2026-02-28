@@ -39,7 +39,12 @@ import {
   ServiceAccountList,
   ServiceList,
 } from 'kubernetes-types/core/v1'
-import { Ingress, IngressList, NetworkPolicy, NetworkPolicyList } from 'kubernetes-types/networking/v1'
+import {
+  Ingress,
+  IngressList,
+  NetworkPolicy,
+  NetworkPolicyList,
+} from 'kubernetes-types/networking/v1'
 import {
   ClusterRole,
   ClusterRoleBinding,

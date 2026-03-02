@@ -9,7 +9,7 @@ A Helm chart for Kubernetes Dashboard - Kite
 ### Add Helm Repository
 
 ```bash
-helm repo add kite https://zxh326.github.io/kite
+helm repo add kite https://kite-org.github.io/kite/
 helm repo update
 ```
 

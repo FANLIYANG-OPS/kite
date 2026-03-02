@@ -6,10 +6,13 @@
 
 _一个现代化、直观的 Kubernetes Dashboard_
 
+<a href="https://trendshift.io/repositories/21820" target="_blank"><img src="https://trendshift.io/api/badge/repositories/21820" alt="kite-org%2Fkite | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org)
 [![React](https://img.shields.io/badge/React-19+-61DAFB?style=flat&logo=react)](https://reactjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5+-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/License-Apache-green.svg)](LICENSE)
+<a href="https://join.slack.com/t/kite-dashboard/shared_invite/zt-3cl9mccs7-eQZ1_t6IoTPHZkxXED1ceg"><img alt="Join Kite" src="https://badgen.net/badge/Slack/Join%20Kite/0abd59?icon=slack" /></a>
 
 [**在线 Demo**](https://kite-demo.zzde.me) | [**文档**](https://kite.zzde.me)
 <br>
@@ -18,9 +21,6 @@ _一个现代化、直观的 Kubernetes Dashboard_
 </div>
 
 Kite 是一个轻量级、现代化的 Kubernetes Dashboard，为管理和监控您的 Kubernetes 集群提供了一个直观的界面。它提供实时指标、全面的资源管理、多集群支持和优美的用户体验。
-
-> [!WARNING]
-> 本项目正在快速迭代开发中，使用方式和 API 都有可能变化。
 
 ![Dashboard Overview](docs/screenshots/overview.png)
 _全面的集群概览，包含实时指标和资源统计_
@@ -79,7 +79,7 @@ _全面的集群概览，包含实时指标和资源统计_
 要使用 Docker 运行 Kite，您可以使用预构建的镜像：
 
 ```bash
-docker run --rm -p 8080:8080 ghcr.io/zxh326/kite:latest
+docker run -d -p 8080:8080 -v ./data:/data -e DB_DSN=/data/db.sqlite ghcr.io/kite-org/kite:latest
 ```
 
 ### 在 Kubernetes 中部署
@@ -89,7 +89,7 @@ docker run --rm -p 8080:8080 ghcr.io/zxh326/kite:latest
 1.  **添加 Helm 仓库**
 
     ```bash
-    helm repo add kite https://zxh326.github.io/kite
+    helm repo add kite https://kite-org.github.io/kite/
     helm repo update
     ```
 
@@ -106,7 +106,9 @@ docker run --rm -p 8080:8080 ghcr.io/zxh326/kite:latest
     ```bash
     kubectl apply -f deploy/install.yaml
     # 或在线安装
-    kubectl apply -f https://raw.githubusercontent.com/zxh326/kite/refs/heads/main/deploy/install.yaml
+    # 注意：此方法可能不适合生产环境，因为他没有配置任何持久化相关内容，你需要手动挂载持久化卷并设置环境变量 DB_DSN=/data/db.sqlite 来确保数据不会丢失。或者也可以外部数据库。
+    # 参考: https://kite.zzde.me/zh/faq.html#%E6%8C%81%E4%B9%85%E5%8C%96%E7%9B%B8%E5%85%B3
+    kubectl apply -f https://raw.githubusercontent.com/kite-org/kite/refs/heads/main/deploy/install.yaml
     ```
 
 2.  **通过端口转发访问**
@@ -122,7 +124,7 @@ docker run --rm -p 8080:8080 ghcr.io/zxh326/kite:latest
 1.  **克隆仓库**
 
     ```bash
-    git clone https://github.com/zxh326/kite.git
+    git clone https://github.com/kite-org/kite.git
     cd kite
     ```
 

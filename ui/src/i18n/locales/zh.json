@@ -77,7 +77,8 @@
     "cronjobs": "定时任务",
     "storageclasses": "存储类",
     "events": "事件",
-    "crds": "CRD",
+    "crds": "自定义资源定义",
+    "kubectl": "Kubectl 终端",
     "settings": "设置",
     "serviceaccounts": "服务账户",
     "roles": "角色",
@@ -242,6 +243,8 @@
       "generalError": "身份验证过程中发生意外错误。",
       "contactSupport": "请重试或联系支持（如果问题仍然存在）。",
       "invalidCredentials": "用户名或密码无效",
+      "insufficient permissions": "权限不足",
+      "invalid credentials": "用户名或密码无效",
       "unknownError": "发生未知错误"
     }
   },

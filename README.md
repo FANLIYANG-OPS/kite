@@ -6,11 +6,13 @@
 
 _A modern, intuitive Kubernetes dashboard_
 
+<a href="https://trendshift.io/repositories/21820" target="_blank"><img src="https://trendshift.io/api/badge/repositories/21820" alt="kite-org%2Fkite | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org)
 [![React](https://img.shields.io/badge/React-19+-61DAFB?style=flat&logo=react)](https://reactjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5+-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/License-Apache-green.svg)](LICENSE)
-[![HelloGitHub](https://api.hellogithub.com/v1/widgets/recommend.svg?rid=a8bd165df55f41a295b62c716228b007&claim_uid=w5uk718RFhDzdCX&theme=small)](https://hellogithub.com/repository/zxh326/kite)
+<a href="https://join.slack.com/t/kite-dashboard/shared_invite/zt-3cl9mccs7-eQZ1_t6IoTPHZkxXED1ceg"><img alt="Join Kite" src="https://badgen.net/badge/Slack/Join%20Kite/0abd59?icon=slack" /></a>
 
 [**Live Demo**](https://kite-demo.zzde.me) | [**Documentation**](https://kite.zzde.me)
 <br>
@@ -19,9 +21,6 @@ _A modern, intuitive Kubernetes dashboard_
 </div>
 
 Kite is a lightweight, modern Kubernetes dashboard that provides an intuitive interface for managing and monitoring your Kubernetes clusters. It offers real-time metrics, comprehensive resource management, multi-cluster support, and a beautiful user experience.
-
-> [!WARNING]
-> This project is currently in rapid development and testing, and the usage and API may change.
 
 ![Dashboard Overview](docs/screenshots/overview.png)
 _Comprehensive cluster overview with real-time metrics and resource statistics_
@@ -80,7 +79,7 @@ For detailed instructions, please refer to the [documentation](https://kite.zzde
 To run Kite using Docker, you can use the pre-built image:
 
 ```bash
-docker run --rm -p 8080:8080 ghcr.io/zxh326/kite:latest
+docker run -d -p 8080:8080 -v ./data:/data -e DB_DSN=/data/db.sqlite ghcr.io/kite-org/kite:latest
 ```
 
 ### Deploy in Kubernetes
@@ -90,7 +89,7 @@ docker run --rm -p 8080:8080 ghcr.io/zxh326/kite:latest
 1. **Add Helm repository**
 
    ```bash
-   helm repo add kite https://zxh326.github.io/kite
+   helm repo add kite https://kite-org.github.io/kite/
    helm repo update
    ```
 
@@ -107,7 +106,9 @@ docker run --rm -p 8080:8080 ghcr.io/zxh326/kite:latest
    ```bash
    kubectl apply -f deploy/install.yaml
    # or install it online
-   kubectl apply -f https://raw.githubusercontent.com/zxh326/kite/refs/heads/main/deploy/install.yaml
+   # Note: This method may not be suitable for a production environment, as it does not include any configuration related to persistence. You will need to manually mount the persistence volume and set the environment variable DB_DSN=/data/db.sqlite to ensure that data is not lost. Alternatively, an external database can be used.
+   # ref: https://kite.zzde.me/faq.html#persistence-issues
+   kubectl apply -f https://raw.githubusercontent.com/kite-org/kite/refs/heads/main/deploy/install.yaml
    ```
 
 2. **Access via port-forward**
@@ -123,7 +124,7 @@ docker run --rm -p 8080:8080 ghcr.io/zxh326/kite:latest
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/zxh326/kite.git
+   git clone https://github.com/kite-org/kite.git
    cd kite
    ```
 

@@ -16,7 +16,7 @@ Using Helm provides flexibility for configuration and upgrades:
 
 ```bash
 # Add Kite repository
-helm repo add kite https://zxh326.github.io/kite
+helm repo add kite https://kite-org.github.io/kite/
 
 # Update repository information
 helm repo update
@@ -41,8 +41,14 @@ helm install kite kite/kite -n kite-system -f values.yaml
 
 For quick deployment, you can directly apply the official installation YAML:
 
+::: warning
+This method is not suitable for production environments, as it does not include any configuration related to persistence. You need to manually mount the persistence volume and set the environment variable `DB_DSN=/data/db.sqlite` to ensure that data is not lost. Alternatively, you can use an external database.
+
+see [Persistence Issues](../faq#persistence-issues) for more details.
+:::
+
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/zxh326/kite/main/deploy/install.yaml
+kubectl apply -f https://raw.githubusercontent.com/kite-org/kite/main/deploy/install.yaml
 ```
 
 This method will install Kite with default configuration. For advanced customization, it's recommended to use the Helm Chart.
@@ -175,7 +181,7 @@ helm uninstall kite -n kite-system
 ### YAML Uninstall
 
 ```bash
-kubectl delete -f https://raw.githubusercontent.com/zxh326/kite/main/deploy/install.yaml
+kubectl delete -f https://raw.githubusercontent.com/kite-org/kite/main/deploy/install.yaml
 ```
 
 ## Next Steps

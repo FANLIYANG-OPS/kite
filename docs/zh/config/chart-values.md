@@ -4,17 +4,17 @@
 
 ## 基础配置
 
-| 参数               | 描述                                               | 默认值                |
-| ------------------ | -------------------------------------------------- | --------------------- |
-| `replicaCount`     | 副本数量                                           | `1`                   |
-| `image.repository` | 容器镜像仓库                                       | `ghcr.io/zxh326/kite` |
-| `image.pullPolicy` | 镜像拉取策略                                       | `IfNotPresent`        |
-| `image.tag`        | 镜像标签。如果设置，将覆盖 chart 的 `appVersion`。 | `""`                  |
-| `imagePullSecrets` | 私有镜像仓库的拉取密钥                             | `[]`                  |
-| `nameOverride`     | 覆盖 chart 名称                                    | `""`                  |
-| `fullnameOverride` | 覆盖完整名称                                       | `""`                  |
-| `debug`            | 启用调试模式                                       | `false`               |
-| `basePath`         | 应用的基础路径，详见安装文档中的说明。     | `""`                 |
+| 参数               | 描述                                               | 默认值                  |
+| ------------------ | -------------------------------------------------- | ----------------------- |
+| `replicaCount`     | 副本数量                                           | `1`                     |
+| `image.repository` | 容器镜像仓库                                       | `ghcr.io/kite-org/kite` |
+| `image.pullPolicy` | 镜像拉取策略                                       | `IfNotPresent`          |
+| `image.tag`        | 镜像标签。如果设置，将覆盖 chart 的 `appVersion`。 | `""`                    |
+| `imagePullSecrets` | 私有镜像仓库的拉取密钥                             | `[]`                    |
+| `nameOverride`     | 覆盖 chart 名称                                    | `""`                    |
+| `fullnameOverride` | 覆盖完整名称                                       | `""`                    |
+| `debug`            | 启用调试模式                                       | `false`                 |
+| `basePath`         | 应用的基础路径，详见安装文档中的说明。             | `""`                    |
 
 ## 认证与安全
 

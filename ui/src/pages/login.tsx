@@ -52,7 +52,11 @@ export function LoginPage() {
       await loginWithPassword(username, password)
     } catch (err) {
       if (err instanceof Error) {
-        setPasswordError(err.message || t('login.errors.invalidCredentials'))
+        setPasswordError(
+          t(`login.errors.${err.message}`, {
+            defaultValue: err.message,
+          }) || t('login.errors.invalidCredentials')
+        )
       } else {
         setPasswordError(t('login.errors.unknownError'))
       }

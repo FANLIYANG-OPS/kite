@@ -4,17 +4,17 @@ This document describes all available configuration options for the Kite Helm Ch
 
 ## Basic Configuration
 
-| Parameter          | Description                                                | Default               |
-| ------------------ | ---------------------------------------------------------- | --------------------- |
-| `replicaCount`     | Number of replicas                                         | `1`                   |
-| `image.repository` | Container image repository                                 | `ghcr.io/zxh326/kite` |
-| `image.pullPolicy` | Image pull policy                                          | `IfNotPresent`        |
-| `image.tag`        | Image tag. If set, will override the chart's `appVersion`. | `""`                  |
-| `imagePullSecrets` | Image pull secrets for private repositories                | `[]`                  |
-| `nameOverride`     | Override chart name                                        | `""`                  |
-| `fullnameOverride` | Override full name                                         | `""`                  |
-| `debug`            | Enable debug mode                                          | `false`               |
-| `basePath`         | Base path where Kite is served. See notes below. | `""`                 |
+| Parameter          | Description                                                | Default                 |
+| ------------------ | ---------------------------------------------------------- | ----------------------- |
+| `replicaCount`     | Number of replicas                                         | `1`                     |
+| `image.repository` | Container image repository                                 | `ghcr.io/kite-org/kite` |
+| `image.pullPolicy` | Image pull policy                                          | `IfNotPresent`          |
+| `image.tag`        | Image tag. If set, will override the chart's `appVersion`. | `""`                    |
+| `imagePullSecrets` | Image pull secrets for private repositories                | `[]`                    |
+| `nameOverride`     | Override chart name                                        | `""`                    |
+| `fullnameOverride` | Override full name                                         | `""`                    |
+| `debug`            | Enable debug mode                                          | `false`                 |
+| `basePath`         | Base path where Kite is served. See notes below.           | `""`                    |
 
 ## Authentication & Security
 

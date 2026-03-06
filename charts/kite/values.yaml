@@ -248,6 +248,8 @@ gateway:
             - path:
                 type: PathPrefix
                 value: /
+          timeouts:
+            request: "120s"
     # Example: additional route for different hostname/path
     # - name: kite-api
     #   annotations: {}

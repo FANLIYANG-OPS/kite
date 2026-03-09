@@ -43,6 +43,7 @@ docs/.vitepress/cache
 
 kite
 !charts/kite
-
+node_modules
 
 .gocache/
+dev.db

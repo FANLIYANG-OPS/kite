@@ -1,21 +1,15 @@
 import { useEffect, useState } from 'react'
-import {
-  IconExternalLink,
-  IconLoader,
-  IconRefresh,
-  IconTrash,
-} from '@tabler/icons-react'
+import { IconLoader, IconRefresh, IconTrash } from '@tabler/icons-react'
 import * as yaml from 'js-yaml'
-import { Service } from 'kubernetes-types/core/v1'
+import { ConfigMap } from 'kubernetes-types/core/v1'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
-import { ResourceType } from '@/types/api'
 import { updateResource, useResource } from '@/lib/api'
 import { getOwnerInfo } from '@/lib/k8s'
-import { withSubPath } from '@/lib/subpath'
 import { formatDate, translateError } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -23,13 +17,14 @@ import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
 import { DescribeDialog } from '@/components/describe-dialog'
 import { ErrorMessage } from '@/components/error-message'
 import { EventTable } from '@/components/event-table'
+import { KeyValueDataViewer } from '@/components/key-value-data-viewer'
 import { LabelsAnno } from '@/components/lables-anno'
 import { RelatedResourcesTable } from '@/components/related-resource-table'
 import { ResourceDeleteConfirmationDialog } from '@/components/resource-delete-confirmation-dialog'
 import { ResourceHistoryTable } from '@/components/resource-history-table'
 import { YamlEditor } from '@/components/yaml-editor'
 
-export function ServiceDetail(props: { name: string; namespace?: string }) {
+export function ConfigMapDetail(props: { namespace: string; name: string }) {
   const { namespace, name } = props
   const [yamlContent, setYamlContent] = useState('')
   const [isSavingYaml, setIsSavingYaml] = useState(false)
@@ -44,7 +39,7 @@ export function ServiceDetail(props: { name: string; namespace?: string }) {
     isError,
     error,
     refetch: handleRefresh,
-  } = useResource('services', name, namespace)
+  } = useResource('configmaps', name, namespace)
 
   useEffect(() => {
     if (data) {
@@ -52,12 +47,11 @@ export function ServiceDetail(props: { name: string; namespace?: string }) {
     }
   }, [data])
 
-  const handleSaveYaml = async (content: Service) => {
+  const handleSaveYaml = async (content: ConfigMap) => {
     setIsSavingYaml(true)
     try {
-      await updateResource('services', name, namespace, content)
+      await updateResource('configmaps', name, namespace, content)
       toast.success('YAML saved successfully')
-      // Refresh data after successful save
       await handleRefresh()
     } catch (error) {
       toast.error(translateError(error, t))
@@ -66,65 +60,56 @@ export function ServiceDetail(props: { name: string; namespace?: string }) {
     }
   }
 
-  const handleYamlChange = (content: string) => {
-    setYamlContent(content)
-  }
-
   const handleManualRefresh = async () => {
-    // Increment refresh key to force YamlEditor re-render
     setRefreshKey((prev) => prev + 1)
     await handleRefresh()
   }
 
-  if (isLoading) {
+  if (isLoading)
     return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-center gap-2">
-              <IconLoader className="animate-spin" />
-              <span>Loading service details...</span>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center p-8">
+        <IconLoader className="h-6 w-6 animate-spin" />
       </div>
     )
-  }
 
-  if (isError || !data) {
+  if (isError) {
     return (
       <ErrorMessage
-        resourceName={'service'}
         error={error}
+        resourceName="ConfigMap"
         refetch={handleRefresh}
       />
     )
   }
+
+  if (!data) {
+    return <div>ConfigMap not found</div>
+  }
+
+  const configmap = data as ConfigMap
+  const ownerInfo = getOwnerInfo(configmap.metadata)
+  const dataCount = Object.keys(configmap.data || {}).length
+  const binaryDataCount = Object.keys(configmap.binaryData || {}).length
+  const totalCount = dataCount + binaryDataCount
 
   return (
     <div className="space-y-2">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold">{name}</h1>
-          {namespace && (
-            <p className="text-muted-foreground">
-              Namespace: <span className="font-medium">{namespace}</span>
-            </p>
-          )}
+          <h1 className="text-lg font-bold">{configmap.metadata!.name}</h1>
+          <p className="text-muted-foreground">
+            Namespace:{' '}
+            <span className="font-medium">{configmap.metadata!.namespace}</span>
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            disabled={isLoading}
-            variant="outline"
-            size="sm"
-            onClick={handleManualRefresh}
-          >
+          <Button variant="outline" size="sm" onClick={handleManualRefresh}>
             <IconRefresh className="w-4 h-4" />
             Refresh
           </Button>
           <DescribeDialog
-            resourceType={'services' as ResourceType}
+            resourceType="configmaps"
             namespace={namespace}
             name={name}
           />
@@ -145,85 +130,111 @@ export function ServiceDetail(props: { name: string; namespace?: string }) {
             value: 'overview',
             label: 'Overview',
             content: (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="capitalize">
-                      Service Information
-                    </CardTitle>
+                    <CardTitle>ConfigMap Information</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                       <div>
                         <Label className="text-xs text-muted-foreground">
                           Created
                         </Label>
                         <p className="text-sm">
-                          {formatDate(data.metadata?.creationTimestamp || '')}
+                          {formatDate(
+                            configmap.metadata!.creationTimestamp!,
+                            true
+                          )}
                         </p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">
+                          Keys
+                        </Label>
+                        <p className="text-sm">{totalCount}</p>
                       </div>
                       <div>
                         <Label className="text-xs text-muted-foreground">
                           UID
                         </Label>
                         <p className="text-sm font-mono">
-                          {data.metadata?.uid || 'N/A'}
+                          {configmap.metadata!.uid}
                         </p>
                       </div>
-                      {getOwnerInfo(data.metadata) && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">
+                          Resource Version
+                        </Label>
+                        <p className="text-sm font-mono">
+                          {configmap.metadata!.resourceVersion}
+                        </p>
+                      </div>
+                      {ownerInfo && (
                         <div>
                           <Label className="text-xs text-muted-foreground">
                             Owner
                           </Label>
                           <p className="text-sm">
-                            {(() => {
-                              const ownerInfo = getOwnerInfo(data.metadata)
-                              if (!ownerInfo) {
-                                return 'No owner'
-                              }
-                              return (
-                                <Link to={ownerInfo.path} className="app-link">
-                                  {ownerInfo.kind}/{ownerInfo.name}
-                                </Link>
-                              )
-                            })()}
+                            <Link
+                              to={ownerInfo.path}
+                              className="text-blue-600 hover:text-blue-800 hover:underline"
+                            >
+                              {ownerInfo.kind}/{ownerInfo.name}
+                            </Link>
                           </p>
                         </div>
                       )}
-                      <div>
-                        <Label className="text-xs text-muted-foreground">
-                          Ports
-                        </Label>
-                        <div className="flex flex-wrap items-center gap-1">
-                          {(data?.spec?.ports || []).map(
-                            (port, index, array) => (
-                              <span key={`${port.port}-${port.protocol}`}>
-                                <a
-                                  href={withSubPath(
-                                    `/api/v1/namespaces/${namespace}/services/${name}:${port.port}/proxy/`
-                                  )}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="font-mono app-link inline-flex items-center gap-1"
-                                >
-                                  {(port.name || port.protocol) &&
-                                    `${port.name || port.protocol}:`}
-                                  {port.port}
-                                  <IconExternalLink className="w-3 h-3" />
-                                </a>
-                                {index < array.length - 1 && ', '}
-                              </span>
-                            )
-                          )}
-                        </div>
-                      </div>
                     </div>
                     <LabelsAnno
-                      labels={data.metadata?.labels || {}}
-                      annotations={data.metadata?.annotations || {}}
+                      labels={configmap.metadata!.labels || {}}
+                      annotations={configmap.metadata!.annotations || {}}
                     />
                   </CardContent>
                 </Card>
+              </div>
+            ),
+          },
+          {
+            value: 'data',
+            label: (
+              <>
+                Data
+                {totalCount > 0 && (
+                  <Badge variant="secondary">{totalCount}</Badge>
+                )}
+              </>
+            ),
+            content: (
+              <div className="space-y-4">
+                {dataCount > 0 && (
+                  <KeyValueDataViewer
+                    entries={configmap.data!}
+                    emptyMessage="No data entries"
+                  />
+                )}
+                {binaryDataCount > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Binary Data
+                    </p>
+                    <KeyValueDataViewer
+                      entries={Object.fromEntries(
+                        Object.entries(configmap.binaryData!).map(([k, v]) => [
+                          k,
+                          v as unknown as string,
+                        ])
+                      )}
+                      base64Encoded
+                      emptyMessage="No binary data entries"
+                    />
+                  </div>
+                )}
+                {totalCount === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No data entries
+                  </p>
+                )}
               </div>
             ),
           },
@@ -232,25 +243,24 @@ export function ServiceDetail(props: { name: string; namespace?: string }) {
             label: 'YAML',
             content: (
               <div className="space-y-4">
-                <YamlEditor<'services'>
+                <YamlEditor<'configmaps'>
                   key={refreshKey}
                   value={yamlContent}
-                  title="YAML Configuration"
+                  onChange={(c) => setYamlContent(c)}
                   onSave={handleSaveYaml}
-                  onChange={handleYamlChange}
                   isSaving={isSavingYaml}
                 />
               </div>
             ),
           },
           {
-            value: 'Related',
+            value: 'related',
             label: 'Related',
             content: (
               <RelatedResourcesTable
-                resource={'services'}
-                name={name}
-                namespace={namespace}
+                resource="configmaps"
+                name={configmap.metadata!.name!}
+                namespace={configmap.metadata!.namespace}
               />
             ),
           },
@@ -259,9 +269,9 @@ export function ServiceDetail(props: { name: string; namespace?: string }) {
             label: 'Events',
             content: (
               <EventTable
-                resource={'services'}
-                namespace={namespace}
-                name={name}
+                resource="configmaps"
+                name={configmap.metadata!.name!}
+                namespace={configmap.metadata!.namespace}
               />
             ),
           },
@@ -269,11 +279,11 @@ export function ServiceDetail(props: { name: string; namespace?: string }) {
             value: 'history',
             label: 'History',
             content: (
-              <ResourceHistoryTable<'services'>
-                resourceType={'services'}
+              <ResourceHistoryTable
+                resourceType="configmaps"
                 name={name}
                 namespace={namespace}
-                currentResource={data}
+                currentResource={configmap}
               />
             ),
           },
@@ -283,8 +293,8 @@ export function ServiceDetail(props: { name: string; namespace?: string }) {
       <ResourceDeleteConfirmationDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
-        resourceName={name}
-        resourceType="services"
+        resourceName={configmap.metadata!.name!}
+        resourceType="configmaps"
         namespace={namespace}
       />
     </div>

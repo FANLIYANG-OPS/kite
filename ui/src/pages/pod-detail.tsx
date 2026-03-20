@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
+import { ContainerInfoCard } from '@/components/container-info-card'
 import { ContainerTable } from '@/components/container-table'
 import { DescribeDialog } from '@/components/describe-dialog'
 import { ResourceEditor } from '@/components/editors/resource-editor'
@@ -285,7 +286,7 @@ export function PodDetail(props: { namespace: string; name: string }) {
                           {pod.spec?.nodeName ? (
                             <Link
                               to={`/nodes/${pod.spec.nodeName}`}
-                              className="text-blue-600 hover:text-blue-800 hover:underline"
+                              className="app-link"
                             >
                               {pod.spec.nodeName}
                             </Link>
@@ -353,10 +354,7 @@ export function PodDetail(props: { namespace: string; name: string }) {
                                 return 'No owner'
                               }
                               return (
-                                <Link
-                                  to={ownerInfo.path}
-                                  className="text-blue-600 hover:text-blue-800 hover:underline"
-                                >
+                                <Link to={ownerInfo.path} className="app-link">
                                   {ownerInfo.kind}/{ownerInfo.name}
                                 </Link>
                               )
@@ -381,7 +379,7 @@ export function PodDetail(props: { namespace: string; name: string }) {
                                   )}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="font-mono text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"
+                                  className="font-mono app-link inline-flex items-center gap-1"
                                 >
                                   {port.name && `${port.name}:`}
                                   {port.containerPort}
@@ -481,6 +479,52 @@ export function PodDetail(props: { namespace: string; name: string }) {
                     </CardContent>
                   </Card>
                 )}
+              </div>
+            ),
+          },
+          {
+            value: 'containers',
+            label: (
+              <>
+                Containers
+                <Badge variant="secondary">
+                  {(pod.spec?.containers?.length || 0) +
+                    (pod.spec?.initContainers?.length || 0)}
+                </Badge>
+              </>
+            ),
+            content: (
+              <div className="space-y-4">
+                {pod.spec?.initContainers &&
+                  pod.spec.initContainers.length > 0 && (
+                    <Card>
+                      <CardContent className="space-y-3 pt-4">
+                        {pod.spec.initContainers.map((container) => (
+                          <ContainerInfoCard
+                            key={container.name}
+                            container={container}
+                            status={pod.status?.initContainerStatuses?.find(
+                              (s) => s.name === container.name
+                            )}
+                            init
+                          />
+                        ))}
+                      </CardContent>
+                    </Card>
+                  )}
+                <Card>
+                  <CardContent className="space-y-3 pt-4">
+                    {pod.spec?.containers?.map((container) => (
+                      <ContainerInfoCard
+                        key={container.name}
+                        container={container}
+                        status={pod.status?.containerStatuses?.find(
+                          (s) => s.name === container.name
+                        )}
+                      />
+                    ))}
+                  </CardContent>
+                </Card>
               </div>
             ),
           },

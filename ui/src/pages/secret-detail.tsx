@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { ResponsiveTabs } from '@/components/ui/responsive-tabs'
 import { ErrorMessage } from '@/components/error-message'
 import { EventTable } from '@/components/event-table'
+import { KeyValueDataViewer } from '@/components/key-value-data-viewer'
 import { LabelsAnno } from '@/components/lables-anno'
 import { RelatedResourcesTable } from '@/components/related-resource-table'
 import { ResourceDeleteConfirmationDialog } from '@/components/resource-delete-confirmation-dialog'
@@ -224,10 +225,7 @@ export function SecretDetail(props: { namespace: string; name: string }) {
                             Owner
                           </Label>
                           <p className="text-sm">
-                            <Link
-                              to={owner.path}
-                              className="text-blue-600 hover:text-blue-800 hover:underline"
-                            >
+                            <Link to={owner.path} className="app-link">
                               {owner.kind}/{owner.name}
                             </Link>
                           </p>
@@ -241,6 +239,27 @@ export function SecretDetail(props: { namespace: string; name: string }) {
                   </CardContent>
                 </Card>
               </div>
+            ),
+          },
+          {
+            value: 'data',
+            label: (
+              <>
+                Data
+                {secret.data && (
+                  <Badge variant="secondary">
+                    {Object.keys(secret.data).length}
+                  </Badge>
+                )}
+              </>
+            ),
+            content: (
+              <KeyValueDataViewer
+                entries={secret.data || {}}
+                sensitive
+                base64Encoded
+                emptyMessage="No data entries"
+              />
             ),
           },
           {

@@ -402,6 +402,40 @@ export function getServiceExternalIP(service: Service): string {
   }
 }
 
+/** Tokens used by the Services list search (name/type/IP + port / nodePort / targetPort). */
+export function getServicePortSearchValues(service: Service): string[] {
+  const ports = service.spec?.ports ?? []
+  const out: string[] = []
+  for (const p of ports) {
+    const protocol = (p.protocol || 'TCP').toLowerCase()
+    if (p.port != null) {
+      out.push(String(p.port))
+      out.push(`${p.port}/${protocol}`)
+    }
+    if (p.nodePort != null) {
+      out.push(String(p.nodePort))
+    }
+    const tp = p.targetPort as unknown
+    if (tp !== undefined && tp !== null) {
+      if (typeof tp === 'number' || typeof tp === 'string') {
+        out.push(String(tp))
+      } else if (typeof tp === 'object') {
+        const o = tp as { StrVal?: string; IntVal?: number }
+        if (o.StrVal != null) out.push(o.StrVal)
+        else if (o.IntVal != null) out.push(String(o.IntVal))
+      }
+    }
+    if (p.port != null) {
+      if (p.nodePort != null) {
+        out.push(`${p.port}:${p.nodePort}/${p.protocol || 'TCP'}`)
+      } else {
+        out.push(`${p.port}/${p.protocol || 'TCP'}`)
+      }
+    }
+  }
+  return out
+}
+
 // Helper function to check if pod has ready condition
 function hasPodReadyCondition(conditions?: Array<{ type?: string }>): boolean {
   return conditions?.some((condition) => condition.type === 'Ready') ?? false
